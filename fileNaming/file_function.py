@@ -2,11 +2,13 @@ import os
 import shutil
 import time
 import pandas as pd
-from tqdm.notebook import tqdm
+from tqdm.notebook import tqdm      #tqdm(filelist, total = len(file_list), position=0, leave=True)
 import re
 from pathlib import Path
 import traceback
 from os.path import join
+import file_function as ff
+from datetime import datetime
 
 #########################################
 # pdf류 아닌 파일 모두 이동시키기
@@ -449,6 +451,37 @@ def rmSubDirs(path: str):
             print(traceback.format_exc())
             print("")
             continue
+
+def write_log(log:list, error:list, path : str =r'D:\0.전산\1.진행중과업\파일서버개편\log') -> None:
+    """
+    log : 성공목록(2차원2열 - ff.re_name 반환값 append), 
+    error : 에러목록(2차원3열 - f, e__class__, e) : exception 해야, 
+    path : 경로 주면 경로에 로그파일 생성
+    경로폴더 미리 만들어야. 기본값은 내 컴/파일서버개편/log"""
+    if len(log)>0 :
+        log_path = join(path,"success")
+        time = str(datetime.today().strftime("%Y%m%d %H%M%S"))
+        name = time +  " "+ str(len(log)) +".txt"
+        index = 1
+
+        with open(join(log_path,name), "w") as lf :
+            for a, b in log :
+                lf.write(str(index))
+                lf.write('\t')
+                lf.write(a)
+                lf.write('\t')
+                lf.write(b)
+                lf.write('\n')
+                index += 1
+
+    # 에러 목록 내 컴퓨터에 저장
+    if len(error) > 0 :
+        df = pd.DataFrame(error, columns=["file", "error class", "error clause"])
+        error_path = join(path, "fail")
+        error_name = time + " "+ str(len(error)) +".csv" 
+        df.to_csv(join(error_path, error_name))
+
+    print(len(log), "개의 파일 업로드 완료,", len(error), "개의 요확인 파일 발생")
 
 
 # 불요 ######################################################################################

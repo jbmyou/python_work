@@ -56,16 +56,56 @@ import os
 import shutil
 import time
 import pandas as pd
-from tqdm.notebook import tqdm      #tqdm(filelist, total = len(filelist, position=0, leave=Ture)
+from tqdm.notebook import tqdm      #tqdm(filelist, total = len(file_list), position=0, leave=True)
 import re
 from pathlib import Path
 import traceback
 from os.path import join
+import file_function as ff
+from datetime import datetime
 
 -----except--------------------------------------------------------------
-print("===================================")
-print(datetime.today().strftime("%H:%M:%S"))
-print(f)
-print(traceback.format_exc())
-error.append(f)
-continue # 반복문 계속 돌아
+        except Exception as e:
+            print("===================================")
+            print(datetime.today().strftime("%H:%M:%S"))
+            print(f, e.__class__, e, sep=" : ")
+            print(traceback.format_exc())
+            error.append([f, e.__class__, e])
+            continue # 반복문 계속 돌아
+
+
+-----기본 작성--------------------------------------------------------------
+path = r'C:\Users\jbmyo\Desktop\test'
+file_list = [f.name for f in os.scandir(path) if f.is_file()]
+log_path = r'D:\0.전산\1.진행중과업\파일서버개편\log'
+log = []
+error = []
+
+for f in tqdm(file_list, total=len(file_list)) :
+    try :
+        if f != "Thumbs.db" :
+            stem = os.path.splitext(f)[0]
+            ext = os.path.splitext(f)[1]
+            
+
+
+
+            new_name = "_".join(temp) + ext
+            log.append(ff.re_name(join(path, f), join(path, new_name)))
+
+    except Exception as e:
+        print("===================================")
+        print(datetime.today().strftime("%H:%M:%S"))
+        print(f, e.__class__, e, sep=" : ")
+        print(traceback.format_exc())
+        error.append([f, e.__class__, e])
+        continue # 반복문 계속 돌아
+
+ff.write_log(log, error, log_path)
+
+
+
+-----실수 하기 쉬운 것--------------------------------------------------------------
+# 조건을 달아야 예외발생 안함            
+if not os.path.exists(dst_dir) :
+    os.mkdir(join(path,key))
