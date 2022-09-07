@@ -12,6 +12,8 @@ docu_kind = '원인서류|양도통지서|양통|승계|판결|명령|이행권�
 docu_kind = '원인서류|양도통지서|판결문|지급명령|이행권고|화해권고|타채|결정문|등본|초본|외국인증명|개회|신복|파산'
 # 최종 결정된 거
 docu_kind = '원인서류|양도통지서|집행권원|강제집행|등본|초본|외국인|개회|신복|파산|재산조사|기타'
+# 공백, 차수, 재도 고려
+docu_kind = r'원인서류|양도통지서[\s]?[\d]?[차]?|집행권원[\s]?[재]?[도]?|집행권원 재도|집행권원재도|강제집행|등본|초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
 
 p_docu = re.compile(docu_kind)
 
@@ -45,7 +47,8 @@ p_extension.match(ext)
 
 
 # 관리 제외(채무상태)
-
+p_out = re.compile('개인회생\(면책\)|파산\(면책\)|환매|매각|종결')
+p_out.match()
 
 
 -----import--------------------------------------------------------------
@@ -58,3 +61,11 @@ import re
 from pathlib import Path
 import traceback
 from os.path import join
+
+-----except--------------------------------------------------------------
+print("===================================")
+print(datetime.today().strftime("%H:%M:%S"))
+print(f)
+print(traceback.format_exc())
+error.append(f)
+continue # 반복문 계속 돌아

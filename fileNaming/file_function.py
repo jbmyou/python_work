@@ -66,7 +66,7 @@ def re_name(src: str, dst: str) -> list:
         i += 1
 
     dst_final = dir + "/" + new_name
-    os.rename(src, dst_final)
+    shutil.move(src, dst_final)
 
     return [src, dst_final]
 
