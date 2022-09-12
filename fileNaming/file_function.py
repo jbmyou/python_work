@@ -7,7 +7,6 @@ import re
 from pathlib import Path
 import traceback
 from os.path import join
-import file_function as ff
 from datetime import datetime
 
 #########################################
@@ -458,10 +457,11 @@ def write_log(log:list, error:list, path : str =r'D:\0.전산\1.진행중과업\
     error : 에러목록(2차원3열 - f, e__class__, e) : exception 해야, 
     path : 경로 주면 경로에 로그파일 생성
     경로폴더 미리 만들어야. 기본값은 내 컴/파일서버개편/log"""
+    day = str(datetime.today().strftime("%Y%m%d"))
+    time = str(datetime.today().strftime("%H%M"))
+    
     if len(log)>0 :
         log_path = join(path,"success")
-        day = str(datetime.today().strftime("%Y%m%d"))
-        time = str(datetime.today().strftime("%H%M"))
         name = day +".txt"
         index = 1
 

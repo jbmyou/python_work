@@ -11,15 +11,15 @@ from os.path import join
 import file_function as ff
 from datetime import datetime
 
-PATH = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)'
-PATH_HAND = r"\\192.168.0.75\스캔파일\새 스캔파일(업로드)\수작업 필요"
-PATH_LOG = r'\\192.168.0.75\스캔파일\스캔파일 log'
-PATH_SERVER = r'\\192.168.0.75\솔림헬프'
-PATH_OUT = r'\\192.168.0.75\삭제예정파일\관리제외'
+PATH = r'C:\Users\jbmyo\Desktop\test'
+PATH_HAND = r"C:\Users\jbmyo\Desktop\test\수작업 필요"
+PATH_LOG = r'C:\Users\jbmyo\Desktop\test\log'
+PATH_SERVER = r'C:\Users\jbmyo\Desktop\test\server'
+PATH_OUT = r'C:\Users\jbmyo\Desktop\test\관리제외'
 
 # 참조 df
 def dict_refer():
-    df_c = pd.read_excel(r'C:\Users\SL\Desktop\채무자조회.xlsx')
+    df_c = pd.read_excel(r'C:\Users\jbmyo\Desktop\채무자조회.xlsx')
     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태]), df_c.iterrows()))
 dict_refer = dict_refer()
 
@@ -93,6 +93,7 @@ for f in tqdm(file_list, total=cnt_total):
         depth1, depth2, depth3,  = "", "", ""
         key, name, docu, event, extra = "", "", "", "", ""
 
+
         # key 없는 거 수작업 폴더로
         if not p_key.match(n):  
             basic_except.append([f, "noKey"])
@@ -158,9 +159,8 @@ for f in tqdm(file_list, total=cnt_total):
             basic = p_basic.match(n)
             if basic == None : # 필수 양식에 맞지 않는다.
                 shutil.move(join(PATH, f), join(PATH_HAND, (n+ext)))
-                basic_except.append([f, n+ext])
+                basic_except.append([n+ext, "basic"])
                 continue
-                
             else :
 
                 # 필수3요소 변수 저장
@@ -168,7 +168,7 @@ for f in tqdm(file_list, total=cnt_total):
                 name=basic.group(2).strip()  # [/D]가 공백을 포함하므로
                 docu=basic.group(3)
 
-            # 사건번호, 기타정보 변수 저장
+                # 사건번호, 기타정보 변수 저장
                 if p_event.search(n):
                     temp=p_event.search(n)
                     event=temp.group() # 이벤트
@@ -180,7 +180,7 @@ for f in tqdm(file_list, total=cnt_total):
                 name_items = [key, name, docu]
                 if event : name_items.append(event)
                 if extra : name_items.append(extra)
-
+                
                 new_f = "_".join(name_items)+ext
                 # 마지막에 _ 두개 인 경우 꼭 해줘야 해.
                 new_f = re.sub("[_]{2,}", "_", new_f)
@@ -194,8 +194,7 @@ for f in tqdm(file_list, total=cnt_total):
             try :
                 depth2=dict_refer[depth3][0]  # 매각사구분
             except Exception as e:
-                error.append([f, e.__class__, e])
-                #basic_except.append([f, new_f])
+                basic_except.append([new_f, "keyError"])
                 shutil.move(join(PATH,f), join(PATH_HAND, new_f))
                 continue
             depth1=""  # 문서종류
@@ -219,10 +218,9 @@ for f in tqdm(file_list, total=cnt_total):
                         break
 
                 if depth1 == "" : #docu검사는 이미 했음.
-                    basic_except.append([new_f, "keyError"])
+                    basic_except.append([new_f, "어떤 이유로 docu매칭 안 됨"])
                     shutil.move(join(PATH,f), join(PATH_HAND, new_f))
                     continue
-
 
                 # 파일이동을 위한 준비(도착지 디렉토리 및 파일명 작성)
                 dst_dir=os.path.join(PATH_SERVER, depth1, depth2, depth3)
