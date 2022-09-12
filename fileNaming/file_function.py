@@ -460,13 +460,16 @@ def write_log(log:list, error:list, path : str =r'D:\0.전산\1.진행중과업\
     경로폴더 미리 만들어야. 기본값은 내 컴/파일서버개편/log"""
     if len(log)>0 :
         log_path = join(path,"success")
-        time = str(datetime.today().strftime("%Y%m%d %H%M%S"))
-        name = time +  " "+ str(len(log)) +".txt"
+        day = str(datetime.today().strftime("%Y%m%d"))
+        time = str(datetime.today().strftime("%H%M"))
+        name = day +".txt"
         index = 1
 
-        with open(join(log_path,name), "w") as lf :
+        with open(join(log_path,name), "a") as lf :
             for a, b in log :
                 lf.write(str(index))
+                lf.write('\t')
+                lf.write(time)
                 lf.write('\t')
                 lf.write(a)
                 lf.write('\t')
@@ -476,12 +479,20 @@ def write_log(log:list, error:list, path : str =r'D:\0.전산\1.진행중과업\
 
     # 에러 목록 내 컴퓨터에 저장
     if len(error) > 0 :
-        df = pd.DataFrame(error, columns=["file", "error class", "error clause"])
+        #df = pd.DataFrame(error, columns=["file", "error class", "error clause"])
         error_path = join(path, "fail")
-        error_name = time + " "+ str(len(error)) +".csv" 
-        df.to_csv(join(error_path, error_name))
+        error_name = day  +".csv" 
 
-    print(len(log), "개의 파일 업로드 완료,", len(error), "개의 요확인 파일 발생")
+        import csv
+                    
+        with open (join(error_path, error_name), "a", newline="") as p :
+            for e in error :
+                wr = csv.writer(p)
+                wr.writerow(e)
+
+
+
+
 
 
 # 불요 ######################################################################################
