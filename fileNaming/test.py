@@ -1,11 +1,8 @@
 import os
 import shutil
-#import time
 import pandas as pd
-# tqdm(filelist, total = len(file_list), position=0, leave=True)
 from tqdm.notebook import tqdm
 import re
-# from pathlib import Path
 import traceback
 from os.path import join
 import file_function as ff
