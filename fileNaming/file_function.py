@@ -54,12 +54,12 @@ def re_name(src: str, dst: str) -> list:
     """
     dir = os.path.split(dst)[0]
     f_name = os.path.split(dst)[1]
-    stem = os.path.splitext(f_name)[0]
+    stem = os.path.splitext(f_name)[0].strip()
     ext = os.path.splitext(f_name)[1]
 
-    # date = re.sub("[\D][\d]{6}")
-    numbering = r'(_[(][\d]{1,2}[)]|_[\d]{1,2}|[\s]*[(][\d]{1,2}[)][\s]*|[\s]+[\d]{1,2}[\s]*)$'
-    temp = re.sub(numbering, "", stem)  # 모든 넘버링 제거
+    # date = re.sub("[\D][\d]{6}") 
+    numbering = r'(_[(][\d]{1,2}[)]|_[\d]{1,2}|[\s]*[(][\d]{1,2}[)]|[\s]+[\d]{1,2})$'
+    temp = re.sub(numbering, "", stem)  # 모든 넘버링 제거 _ , 괄호, 공백 뒤에 나오는 숫자 1~2자리
     new_name = temp + ext
 
     i = 1

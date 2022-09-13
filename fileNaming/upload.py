@@ -59,13 +59,14 @@ docu_list=["", "원인서류", "양도통지서", "집행권원", "강제집행"
 p1=re.compile("원인 서류|입회 신청서|입회신청서")
 p2=re.compile("양도 통지서|채권\s?양도\s?통지서|\s?양통\s|\s양통\s?")  # ? 는 {0,1}, 세양통신 해결
 p3=re.compile("집행 권원|승계\s?집행문|판결문|지급\s?명령|이행\s?권고|화해\s?권고")
-p4=re.compile("결정문|결정|[가-힣]+\s?타채|강제 집행")
+p4=re.compile("결정문|결정|[가-힣]+\s?타채|강제 집행") # '결정'이 반복될 수 있으모르 count=1
 # p5 등본
 p_5except = re.compile("등본초본|초본등본|등초본")
 p6=re.compile("(?<![가-힣])원초본|(?<=원)원초본") # 이렇게까지 해야되냐? ㅠㅠ
 # p7 외국인증명
-p8=re.compile(r"개회(?=\D)|개인 회생|(?<!개인)회생") # 후방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지
-p9=re.compile("신복(?![가-힣])|신용\s*회복")
+# 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
+p8=re.compile(r"(?<!\d{2})개회|(?<!\d{2}\s)개회|개인 회생|(?<!개인)회생") 
+p9=re.compile("(?<![가-힣0-9])신복(?![가-힣])|신용\s*회복") #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
 # p10 파산
 p11=re.compile("재산 조사")
 
@@ -79,8 +80,8 @@ p_event2=re.compile(r"(?<=\D)(\d{2})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
 p_day=re.compile(r"(\d{2,4})\s(\d{2})\s(\d{2})")
 
 # 항목별 저장을 위한 컴파일----------------------
-docu_kind = r'원인서류|양도통지서[\s]?[\d]?[차]?|집행권원[\s]?[재]?[도]?|강제집행|등본|초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
-p_docu = re.compile(docu_kind)
+docu_kind = r'원인서류|양도통지서[\s]?[\d]?[차]?|집행권원[\s]?[재]?[도]?|강제집행|등본|(?<!원)초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
+#p_docu = re.compile(docu_kind)
 p_basic = re.compile(r'(\d{8})[_\s]?(\D+.+)[_\s]?('+docu_kind+r')')
 p_event = re.compile(r"\d{4}[ㄱ-ㅎ가-힣]{1,3}\d+")
 
@@ -125,30 +126,40 @@ for f in tqdm(file_list, total=cnt_total):
                 n = re.sub("[^a-zA-Zㄱ-ㅎ가-힣0-9\s_()]", "", n)
                 mark_except.append(f)
 
-            before = n
-            # 문서구분 수정하기 -------------------------------
-            # 원인서류
-            if p1.search(n):
-                n=p1.sub(docu_list[1], n)
-            # 양도통지서
-            elif p2.search(n):
-                n=p2.sub(docu_list[2], n)  # 이름에 양통들어가는 경우가 있을 수 있어서 공백씀..
-            # 집행권원
-            elif p3.search(n):
-                n=p3.sub(docu_list[3], n)
-            elif p4.search(n):
-                n=p4.sub(docu_list[4], n)
-            elif p6.search(n):
-                n=p6.sub(docu_list[6], n)
-            elif p8.search(n):
-                n=p8.sub(docu_list[8], n)
-            elif p9.search(n):
-                n=p9.sub(docu_list[9], n)
-            elif p11.search(n):
-                n=p11.sub(docu_list[11], n)
-            after_docu = n
             
-            # 사건번호 수정하기 -------------------------------
+############ basic 미통과 파일명 내부 수정(사실상 문서구분) : 기타정보에 문서구분 단어가 들어간 경우 수정을 하지 않기 위함
+            basic = p_basic.match(n)
+            if basic == None : # 필수 양식에 맞지 않는다.
+
+                before = n
+                # 문서구분 수정하기 -------------------------------
+                # 원인서류
+                if p1.search(n):
+                    n=p1.sub(docu_list[1], n, count=1)
+                # 양도통지서
+                elif p2.search(n):
+                    n=p2.sub(docu_list[2], n, count=1)  # 이름에 양통들어가는 경우가 있을 수 있어서 공백씀..
+                # 집행권원
+                elif p3.search(n):
+                    n=p3.sub(docu_list[3], n, count=1)
+                elif p4.search(n):
+                    n=p4.sub(docu_list[4], n, count=1)
+                elif p6.search(n):
+                    n=p6.sub(docu_list[6], n, count=1)
+                elif p8.search(n):
+                    n=p8.sub(docu_list[8], n, count=1) # 개회 반복될 수 있음
+                elif p9.search(n):
+                    n=p9.sub(docu_list[9], n, count=1)
+                elif p11.search(n):
+                    n=p11.sub(docu_list[11], n, count=1)
+                
+                after_docu = n
+                
+                # 변경 내역 기록
+                if before != after_docu :
+                    docu_except.append((f, after_docu))
+            
+############  basic과 무관 사건번호 수정하기 -------------------------------
             # 1) 사건번호 내부 공백 제거, 사건번호만 있으면 공백이 없어도 체크되므로 예외 추가는 전후 비교 후
             if p_event1.search(n):
                 n=p_event1.sub(r'\1\2\3', n)
@@ -157,9 +168,7 @@ for f in tqdm(file_list, total=cnt_total):
                 n=p_event2.sub(r'20\1\2\3', n)
             after_event = n
             
-            # 문서구분, 사건번호 변경됐을 경우 예외 log 추가
-            if before != after_docu :
-                docu_except.append((f, after_docu))
+            # 사건번호 변경됐을 경우 예외 log 추가
             if after_docu != after_event :
                 event_except.append((f, after_event))
 
@@ -169,7 +178,7 @@ for f in tqdm(file_list, total=cnt_total):
                 day_except.append((f, n))
             
 
-    ########## 필수 요소 확인 후 new_f 완성
+########## 문서구분 변경 후 필수 요소 재확인 후 new_f 완성
 
             basic = p_basic.match(n)
             if basic == None : # 필수 양식에 맞지 않는다.
@@ -187,9 +196,9 @@ for f in tqdm(file_list, total=cnt_total):
                 # 필수3요소 변수 저장
                 key=basic.group(1)
                 name=basic.group(2).strip()  # [/D]가 공백을 포함하므로
-                docu=basic.group(3)
+                docu=basic.group(3).strip()  # n차, 재도 때문에 공백을 포함한다.
 
-            # 사건번호, 기타정보 변수 저장
+            # (continue덕에 앞에 탭위치 앞으로)사건번호, 기타정보 변수 저장
             if p_event.search(n):
                 temp=p_event.search(n)
                 event=temp.group() # 이벤트
