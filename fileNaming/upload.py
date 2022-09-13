@@ -1,3 +1,4 @@
+from ast import expr_context
 import os
 import shutil
 #import time
@@ -11,11 +12,24 @@ from os.path import join
 import file_function as ff
 from datetime import datetime
 
-PATH = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)'
-PATH_HAND = r"\\192.168.0.75\스캔파일\새 스캔파일(업로드)\수작업 필요"
-PATH_LOG = r'\\192.168.0.75\스캔파일\스캔파일 log'
-PATH_SERVER = r'\\192.168.0.75\솔림헬프'
-PATH_OUT = r'\\192.168.0.75\삭제예정파일\관리제외'
+
+PATH = r'C:\Users\SL\Desktop\test'
+PATH_HAND = r"C:\Users\SL\Desktop\test\hand"
+PATH_LOG_SUCCESS = r'C:\Users\SL\Desktop\test\log\success'
+PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
+PATH_LOG_BASIC_EXCEPT = r'C:\Users\SL\Desktop\test\log\basic_except'
+PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
+PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
+
+
+
+# PATH = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\0906'
+# PATH_HAND = r"\\192.168.0.75\스캔파일\새 스캔파일(업로드)\수작업 필요"
+# PATH_LOG_SUCCESS = r'\\192.168.0.75\스캔파일\스캔파일 log\success'
+# PATH_LOG_FAIL = r'\\\192.168.0.75\스캔파일\스캔파일 log\fail'
+# PATH_LOG_BASIC_EXCEPT = r'\\\192.168.0.75\스캔파일\스캔파일 log\basic_except'
+# PATH_SERVER = r'\\192.168.0.75\솔림헬프'
+# PATH_OUT = r'\\192.168.0.75\삭제예정파일\관리제외'
 
 # 참조 df
 def dict_refer():
@@ -47,9 +61,10 @@ p2=re.compile("양도 통지서|채권\s?양도\s?통지서|\s?양통\s|\s양통
 p3=re.compile("집행 권원|승계\s?집행문|판결문|지급\s?명령|이행\s?권고|화해\s?권고")
 p4=re.compile("결정문|결정|[가-힣]+\s?타채|강제 집행")
 # p5 등본
-p6=re.compile("원초본")
+p_5except = re.compile("등본초본|초본등본|등초본")
+p6=re.compile("(?<![가-힣])원초본|(?<=원)원초본") # 이렇게까지 해야되냐? ㅠㅠ
 # p7 외국인증명
-p8=re.compile("개회(?=\D)|개인 회생|회생")
+p8=re.compile(r"개회(?=\D)|개인 회생|(?<!개인)회생") # 후방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지
 p9=re.compile("신복(?![가-힣])|신용\s*회복")
 # p10 파산
 p11=re.compile("재산 조사")
@@ -65,7 +80,8 @@ p_day=re.compile(r"(\d{2,4})\s(\d{2})\s(\d{2})")
 
 # 항목별 저장을 위한 컴파일----------------------
 docu_kind = r'원인서류|양도통지서[\s]?[\d]?[차]?|집행권원[\s]?[재]?[도]?|강제집행|등본|초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
-p_basic = re.compile(r'(\d{8})\s?(\D+)('+docu_kind+r')')
+p_docu = re.compile(docu_kind)
+p_basic = re.compile(r'(\d{8})[_\s]?(\D+.+)[_\s]?('+docu_kind+r')')
 p_event = re.compile(r"\d{4}[ㄱ-ㅎ가-힣]{1,3}\d+")
 
 # 서버 업로드 성공 로그와 에러발생 로그
@@ -160,6 +176,11 @@ for f in tqdm(file_list, total=cnt_total):
                 shutil.move(join(PATH, f), join(PATH_HAND, (n+ext)))
                 basic_except.append([f, n+ext])
                 continue
+
+            elif p_5except.search(n) :
+                key = n[:8]
+                name = n[8:p_5except.search(n).start()].replace("_", " ").strip()
+                docu = '등초본'
                 
             else :
 
@@ -169,21 +190,21 @@ for f in tqdm(file_list, total=cnt_total):
                 docu=basic.group(3)
 
             # 사건번호, 기타정보 변수 저장
-                if p_event.search(n):
-                    temp=p_event.search(n)
-                    event=temp.group() # 이벤트
-                    extra=n[temp.end():].strip().replace(" ", "_") # 기타 정보, 앞뒤 공백은 제거하고 중간 공백은 _로
-                else:
-                    extra=n[basic.end():].strip().replace(" ", "_") # 기타 정보, 앞뒤 공백은 제거하고 중간 공백은 _로
+            if p_event.search(n):
+                temp=p_event.search(n)
+                event=temp.group() # 이벤트
+                extra=n[temp.end():].strip().replace(" ", "_") # 기타 정보, 앞뒤 공백은 제거하고 중간 공백은 _로
+            else:
+                extra=n[basic.end():].strip().replace(" ", "_") # 기타 정보, 앞뒤 공백은 제거하고 중간 공백은 _로
 
-                # 새 이름 만들기
-                name_items = [key, name, docu]
-                if event : name_items.append(event)
-                if extra : name_items.append(extra)
+            # 새 이름 만들기
+            name_items = [key, name, docu]
+            if event : name_items.append(event)
+            if extra : name_items.append(extra)
 
-                new_f = "_".join(name_items)+ext
-                # 마지막에 _ 두개 인 경우 꼭 해줘야 해.
-                new_f = re.sub("[_]{2,}", "_", new_f)
+            new_f = "_".join(name_items)+ext
+            # 마지막에 _ 두개 인 경우 꼭 해줘야 해.
+            new_f = re.sub("[_]{2,}", "_", new_f)
 
     ########## 서버 올리기 ---------------------------------------------------------
 
@@ -242,21 +263,24 @@ for f in tqdm(file_list, total=cnt_total):
         error.append([f, e.__class__, e])
         continue  # 반복문 계속 돌아
 
-ff.write_log(log, error, PATH_LOG)
+#### log #################################
+try :
+    ff.write_log_csv(log, PATH_LOG_SUCCESS)
+    ff.write_log_csv(error, PATH_LOG_FAIL)
+    ff.write_log_csv(basic_except, PATH_LOG_BASIC_EXCEPT)
+except :
+    pass
 ######################
-# except 기록 코드???? 각각 따로 파일로 만드는 게 제일 편할듯
-# basic_except는 따로 실패 폴더에 log 남기는 게 좋겠다?
-######################
+
 cnt_hand = len(basic_except)
 if cnt_total == len(log) + len(error) + cnt_hand + cnt_out :
     print("처리된 파일에 누수 없음")
 else :
     print("처리된 파일에 누수 있음")
 
-print(f'{cnt_total}개의 파일 중 {len(log)}개 서버, {cnt_out}개 관리제외 {cnt_hand}개 수작업, {len(error)}개 예외')
-        # 로그 파일 나스에 저장
-if basic_except :
-    print("basic", *basic_except, sep='\n')
+print(f'{cnt_total}개의 파일 중 {len(log)}개 서버, {cnt_out}개 관리제외, {cnt_hand}개 수작업, {len(error)}개 예외')
+        
+
 if docu_except :
     print("docu", *docu_except, sep='\n')
 if event_except :

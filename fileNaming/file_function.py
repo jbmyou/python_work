@@ -48,8 +48,9 @@ def re_name(src: str, dst: str) -> list:
     """
     파일명 변경 후 os.rename대신 사용하는 함수(중복확인과 새넘버링)
     폴더를 바꾸는 거 아니라면 파일명 다를때라는 조건문 다음에 호출
-    srt : dir + file
+    src : dir + file
     dst : dir + new_name
+    return : [src dir, src filename, dst filename, dst dir]
     """
     dir = os.path.split(dst)[0]
     f_name = os.path.split(dst)[1]
@@ -69,7 +70,9 @@ def re_name(src: str, dst: str) -> list:
     dst_final = dir + "/" + new_name
     shutil.move(src, dst_final)
 
-    return [src, dst_final]
+    
+
+    return [os.path.split(src)[0],os.path.split(src)[1], new_name, dir]
 
 
 #########################################
@@ -451,45 +454,48 @@ def rmSubDirs(path: str):
             print("")
             continue
 
-def write_log(log:list, error:list, path : str =r'D:\0.전산\1.진행중과업\파일서버개편\log') -> None:
-    """
-    log : 성공목록(2차원2열 - ff.re_name 반환값 append), 
-    error : 에러목록(2차원3열 - f, e__class__, e) : exception 해야, 
-    path : 경로 주면 경로에 로그파일 생성
-    경로폴더 미리 만들어야. 기본값은 내 컴/파일서버개편/log"""
-    day = str(datetime.today().strftime("%Y%m%d"))
-    time = str(datetime.today().strftime("%H%M"))
+def write_log_csv(log:list, path : str) -> None:
+    """경로폴더 미리 만들어야. 2차원이 최적이고 그 이상은 셀안에 리스트로"""
+
+    if len(log) > 0 :
     
+        import csv
+        
+        name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) +".csv" 
+                    
+        with open (join(path, name), "a", newline="") as p :
+            for row in log :
+                wr = csv.writer(p)
+                wr.writerow(row)
+    else :
+        print(f'log 파일이 비어있습니다.')
+
+
+def twoDimensionListToTxt(log, path) :
+    """
+    (2 x any)리스트를 받아 txt파일로 만들어주는 함수
+    파일명은 날짜, index와 현재 시간을 본문에 추가
+    """
+    day = str(datetime.today().strftime("%Y%m%d"))
+    time = str(datetime.today().strftime("%H:%M"))
+
     if len(log)>0 :
-        log_path = join(path,"success")
+        #log_path = join(path,"success")
         name = day +".txt"
         index = 1
 
-        with open(join(log_path,name), "a") as lf :
-            for a, b in log :
+        with open(join(path,name), "a") as lf :
+            for row in log :
                 lf.write(str(index))
                 lf.write('\t')
                 lf.write(time)
                 lf.write('\t')
-                lf.write(a)
-                lf.write('\t')
-                lf.write(b)
+                for col in row :
+                    
+                    lf.write(str(col))
+                    lf.write('\t')
                 lf.write('\n')
                 index += 1
-
-    # 에러 목록 내 컴퓨터에 저장
-    if len(error) > 0 :
-        #df = pd.DataFrame(error, columns=["file", "error class", "error clause"])
-        error_path = join(path, "fail")
-        error_name = day  +".csv" 
-
-        import csv
-                    
-        with open (join(error_path, error_name), "a", newline="") as p :
-            for e in error :
-                wr = csv.writer(p)
-                wr.writerow(e)
-
 
 
 
