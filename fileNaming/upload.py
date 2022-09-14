@@ -1,10 +1,9 @@
-from ast import expr_context
 import os
 import shutil
 #import time
 import pandas as pd
 # tqdm(filelist, total = len(file_list), position=0, leave=True)
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import re
 # from pathlib import Path
 import traceback
@@ -13,27 +12,27 @@ import file_function as ff
 from datetime import datetime
 
 
-PATH = r'C:\Users\SL\Desktop\test'
-PATH_HAND = r"C:\Users\SL\Desktop\test\hand"
-PATH_LOG_SUCCESS = r'C:\Users\SL\Desktop\test\log\success'
-PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
-PATH_LOG_BASIC_EXCEPT = r'C:\Users\SL\Desktop\test\log\basic_except'
-PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
-PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
+# PATH = r'C:\Users\SL\Desktop\test'
+# PATH_HAND = r"C:\Users\SL\Desktop\test\hand"
+# PATH_LOG_SUCCESS = r'C:\Users\SL\Desktop\test\log\success'
+# PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
+# PATH_LOG_BASIC_EXCEPT = r'C:\Users\SL\Desktop\test\log\basic_except'
+# PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
+# PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
 
 
 
-# PATH = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\0906'
-# PATH_HAND = r"\\192.168.0.75\스캔파일\새 스캔파일(업로드)\수작업 필요"
-# PATH_LOG_SUCCESS = r'\\192.168.0.75\스캔파일\스캔파일 log\success'
-# PATH_LOG_FAIL = r'\\\192.168.0.75\스캔파일\스캔파일 log\fail'
-# PATH_LOG_BASIC_EXCEPT = r'\\\192.168.0.75\스캔파일\스캔파일 log\basic_except'
-# PATH_SERVER = r'\\192.168.0.75\솔림헬프'
-# PATH_OUT = r'\\192.168.0.75\삭제예정파일\관리제외'
+PATH = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\0913'
+PATH_HAND = r"\\192.168.0.75\스캔파일\새 스캔파일(업로드)\수작업 필요"
+PATH_LOG_SUCCESS = r'\\192.168.0.75\스캔파일\스캔파일 log\success'
+PATH_LOG_FAIL = r'\\192.168.0.75\스캔파일\스캔파일 log\fail'
+PATH_LOG_BASIC_EXCEPT = r'\\192.168.0.75\스캔파일\스캔파일 log\basic_except'
+PATH_SERVER = r'\\192.168.0.75\솔림헬프'
+PATH_OUT = r'\\192.168.0.75\삭제예정파일\관리제외'
 
 # 참조 df
 def dict_refer():
-    df_c = pd.read_excel(r'C:\Users\SL\Desktop\채무자조회.xlsx')
+    df_c = pd.read_excel(r'./파일/채무자조회.xlsx')
     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태]), df_c.iterrows()))
 dict_refer = dict_refer()
 
@@ -74,10 +73,11 @@ p11=re.compile("재산 조사")
 p_event1=re.compile(r"(?<=\D)(\d{4})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
 p_event2=re.compile(r"(?<=\D)(\d{2})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
 
-# 날짜는 굳이 수정할 필요없겠다. 오히려 6자리로 하면 사건번호와 겹칠 확률만 올라가겠네.
-# 혹시 2022. 02. 22 이런식으로 공백 들어가 있는 것만 있는지 체크
-# 결과적으로 날짜 / 주민번호의 공백만 제거하는 것
-p_day=re.compile(r"(\d{2,4})\s(\d{2})\s(\d{2})")
+# 년월일 사이에 기호나 공백이 들어가 있는 경우로 찾아서 6자리로 맞춰준다.
+# 기호를 기준으로 쓰기 때문에 반드시 기호제거보다 나와야
+p_day4 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\d{1})(?!\d)\)?')
+p_day5 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\d{2})\)?')
+p_day6 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{2})[.-/\s](?P<d>\d{2})\)?')
 
 # 항목별 저장을 위한 컴파일----------------------
 docu_kind = r'원인서류|양도통지서[\s]?[\d]?[차]?|집행권원[\s]?[재]?[도]?|강제집행|등본|(?<!원)초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
@@ -106,7 +106,7 @@ for f in tqdm(file_list, total=cnt_total):
     try:
         n = os.path.splitext(f)[0]
         ext = os.path.splitext(f)[1]
-        n = n
+        
         depth1, depth2, depth3,  = "", "", ""
         key, name, docu, event, extra = "", "", "", "", ""
 
@@ -119,6 +119,19 @@ for f in tqdm(file_list, total=cnt_total):
         # key 있는 거 파일명 다듬기
         # 1) 연속 공백 및 기타 기호 제외 : [_()]만 허용
         else:
+            
+            # 날짜, 주민번호 내부 공백 제거 및 예외 log추가-------
+            if p_day4.search(n):
+                day_except.append([n,"4자리"])
+                n = p_day4.sub(r" \g<y>0\g<m>0\g<d>", n)
+            elif p_day5.search(n) :
+                day_except.append([n,"5자리"])
+                n = p_day5.sub(r" \g<y>0\g<m>\g<d>", n)
+            elif p_day6.search(n) :
+                day_except.append([n,"6자리"])
+                n = p_day6.sub(r" \g<y>\g<m>\g<d>", n)
+            else : pass
+
             # 연속 공백 및 기호 제외하기
             n = re.sub("[\s]{2,}", " ", n)
 
@@ -126,12 +139,11 @@ for f in tqdm(file_list, total=cnt_total):
                 n = re.sub("[^a-zA-Zㄱ-ㅎ가-힣0-9\s_()]", "", n)
                 mark_except.append(f)
 
-            
+            before = n
 ############ basic 미통과 파일명 내부 수정(사실상 문서구분) : 기타정보에 문서구분 단어가 들어간 경우 수정을 하지 않기 위함
             basic = p_basic.match(n)
             if basic == None : # 필수 양식에 맞지 않는다.
 
-                before = n
                 # 문서구분 수정하기 -------------------------------
                 # 원인서류
                 if p1.search(n):
@@ -152,12 +164,14 @@ for f in tqdm(file_list, total=cnt_total):
                     n=p9.sub(docu_list[9], n, count=1)
                 elif p11.search(n):
                     n=p11.sub(docu_list[11], n, count=1)
+            else : pass
+            
+            after_docu = n
                 
-                after_docu = n
-                
-                # 변경 내역 기록
-                if before != after_docu :
-                    docu_except.append((f, after_docu))
+            # 변경 내역 기록
+            if before != after_docu :
+                docu_except.append((f, after_docu))
+            else : pass
             
 ############  basic과 무관 사건번호 수정하기 -------------------------------
             # 1) 사건번호 내부 공백 제거, 사건번호만 있으면 공백이 없어도 체크되므로 예외 추가는 전후 비교 후
@@ -166,16 +180,14 @@ for f in tqdm(file_list, total=cnt_total):
                 # 1) + 사건번호 연도가 yy라면
             elif p_event2.search(n):
                 n=p_event2.sub(r'20\1\2\3', n)
+            else : pass
+
             after_event = n
             
             # 사건번호 변경됐을 경우 예외 log 추가
             if after_docu != after_event :
                 event_except.append((f, after_event))
 
-            # 날짜, 주민번호 내부 공백 제거 및 예외 log추가-------
-            if p_day.search(n) :
-                p_day.sub(r'\1\2\3', n)
-                day_except.append((f, n))
             
 
 ########## 문서구분 변경 후 필수 요소 재확인 후 new_f 완성
@@ -215,7 +227,7 @@ for f in tqdm(file_list, total=cnt_total):
             # 마지막에 _ 두개 인 경우 꼭 해줘야 해.
             new_f = re.sub("[_]{2,}", "_", new_f)
 
-    ########## 서버 올리기 ---------------------------------------------------------
+########## 서버 올리기 ---------------------------------------------------------
 
             # 1) depth1 문서종류 매칭
             
@@ -271,6 +283,7 @@ for f in tqdm(file_list, total=cnt_total):
         print(traceback.format_exc())
         error.append([f, e.__class__, e])
         continue  # 반복문 계속 돌아
+#### 반복문 끝########################################
 
 #### log #################################
 try :

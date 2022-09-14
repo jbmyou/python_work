@@ -68,8 +68,8 @@ def re_name(src: str, dst: str) -> list:
         i += 1
 
     dst_final = dir + "/" + new_name
-    shutil.move(src, dst_final)
-
+    #shutil.move(src, dst_final)
+    shutil.copy(src, dst_final)
     
 
     return [os.path.split(src)[0],os.path.split(src)[1], new_name, dir]
@@ -468,7 +468,7 @@ def write_log_csv(log:list, path : str) -> None:
                 wr = csv.writer(p)
                 wr.writerow(row)
     else :
-        print(f'log 파일이 비어있습니다.')
+        print(f'log 파일이 비어있습니다. path : {path}')
 
 
 def twoDimensionListToTxt(log, path) :
