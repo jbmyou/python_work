@@ -68,8 +68,7 @@ def re_name(src: str, dst: str) -> list:
         i += 1
 
     dst_final = dir + "/" + new_name
-    #shutil.move(src, dst_final)
-    shutil.copy(src, dst_final)
+    shutil.move(src, dst_final)
     
 
     return [os.path.split(src)[0],os.path.split(src)[1], new_name, dir]
@@ -355,6 +354,7 @@ def final_check(path):
     """
     채무자키 8 자리 있는지
     문서종류 키워드 있는지
+    언더바가 5개 이상인지
     """
     os.chdir(path)
     file_list = os.listdir(path)
