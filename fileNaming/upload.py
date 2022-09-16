@@ -12,24 +12,24 @@ import file_function as ff
 from datetime import datetime
 
 
-# PATH = r'C:\Users\SL\Desktop\test'
-# PATH_HAND = r"C:\Users\SL\Desktop\test\hand"
-# PATH_LOG_SUCCESS = r'C:\Users\SL\Desktop\test\log\success'
-# PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
-# PATH_LOG_BASIC_EXCEPT = r'C:\Users\SL\Desktop\test\log\basic_except'
-# PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
-# PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
-
-
-
-PATH = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\0913'
-PATH_HAND = r"\\192.168.0.75\스캔파일\새 스캔파일(업로드)\수작업 필요"
-PATH_LOG_SUCCESS = r'\\192.168.0.75\스캔파일\스캔파일 log\success'
-PATH_LOG_FAIL = r'\\192.168.0.75\스캔파일\스캔파일 log\fail'
-PATH_LOG_BASIC_EXCEPT = r'\\192.168.0.75\스캔파일\스캔파일 log\basic_except'
-PATH_SERVER = r'\\192.168.0.75\솔림헬프'
-PATH_OUT = r'\\192.168.0.75\삭제예정파일\관리제외'
+PATH = r'C:\Users\SL\Desktop\test'
+PATH_HAND = r"C:\Users\SL\Desktop\test\hand"
+PATH_LOG_SUCCESS = r'C:\Users\SL\Desktop\test\log\success'
+PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
+PATH_LOG_BASIC_EXCEPT = r'C:\Users\SL\Desktop\test\log\basic_except'
+PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
+PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
 PATH_DF = r'./파일/채무자조회.xlsx'
+
+
+# PATH = r'/volume1/스캔파일/새 스캔파일(업로드)'
+# PATH_HAND = r"/volume1/스캔파일/새 스캔파일(업로드)/수작업"
+# PATH_LOG_SUCCESS = r'/volume1/스캔파일/스캔파일log/success'
+# PATH_LOG_FAIL = r'/volume1/스캔파일/스캔파일log/fail'
+# PATH_LOG_BASIC_EXCEPT = r'/volume1/스캔파일/스캔파일log/basic_except'
+# PATH_SERVER = r'/volume1/솔림헬프'
+# PATH_OUT = r'/volume1/삭제예정파일/관리제외'
+# PATH_DF = r'/volume1/스캔파일/스캔파일log/project/파일/채무자조회.xlsx'
 
 # 참조 df
 def dict_refer():
@@ -82,9 +82,9 @@ p_day5 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\
 p_day6 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{2})[.-/\s](?P<d>\d{2})\)?')
 
 # 항목별 저장을 위한 컴파일----------------------
-docu_kind = r'원인서류|양도통지서[\s]?\d차|양도통지서|집행권원[\s]?[재]?[도]?|강제집행|등본|(?<!원)초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
+docu_kind = r'원인서류|양도통지서[\s]?\d차|양도통지서|집행권원[\s]?[재]?[도]?|강제집행|(?<!등기부)등본|(?<!원)초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
 #p_docu = re.compile(docu_kind)
-p_basic = re.compile(r'(\d{8})[_\s]?(\D+.+)[_\s]?('+docu_kind+r')')
+p_basic = re.compile(r'(\d{8})[_\s]?(\D+.+)[_\s]?(' + docu_kind + r')')
 p_event = re.compile(r"\d{4}[ㄱ-ㅎ가-힣]{1,3}\d+")
 
 # 서버 업로드 성공 로그와 에러발생 로그
