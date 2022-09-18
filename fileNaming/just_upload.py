@@ -15,7 +15,8 @@ from datetime import datetime
 # PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
 # PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
 # PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
-# PATH_DF = r'./파일/채무자조회.xlsx'
+# PATH_DF = r'./파일/채무자조회.pkl' #PATH_DF = r'./파일/채무자조회.xlsx
+
 
 
 PATH = r'/volume1/스캔파일/새 스캔파일(업로드)/검수완료'
@@ -24,13 +25,14 @@ PATH_LOG_SUCCESS = r'/volume1/스캔파일/스캔파일log/success'
 PATH_LOG_FAIL = r'/volume1/스캔파일/스캔파일log/fail'
 PATH_SERVER = r'/volume1/솔림헬프'
 PATH_OUT = r'/volume1/삭제예정파일/관리제외'
-PATH_DF = r'/volume1/스캔파일/스캔파일log/project/파일/채무자조회.xlsx'
+PATH_DF = r'/volume1/스캔파일/스캔파일log/project/파일/채무자조회.pkl'
 
 # 참조 df
 
 
 def dict_refer():
-    df_c = pd.read_excel(PATH_DF)
+    #df_c = pd.read_excel(PATH_DF)
+    df_c = pd.read_pickle(PATH_DF)
     return dict(map(lambda x: (str(x[1].채무자키), [x[1].매각사구분, x[1].채무상태]), df_c.iterrows()))
 
 

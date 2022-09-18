@@ -1,4 +1,4 @@
-import os
+import os, sys
 import shutil
 #import time
 import pandas as pd
@@ -16,92 +16,115 @@ PATH = r'C:\Users\SL\Desktop\test'
 PATH_HAND = r"C:\Users\SL\Desktop\test\hand"
 PATH_LOG_SUCCESS = r'C:\Users\SL\Desktop\test\log\success'
 PATH_LOG_FAIL = r'C:\Users\SL\Desktop\test\log\fail'
-PATH_LOG_BASIC_EXCEPT = r'C:\Users\SL\Desktop\test\log\basic_except'
+PATH_LOG_NOBASIC = r'C:\Users\SL\Desktop\test\log\nobasic'
+PATH_LOG_OUT = r'C:\Users\SL\Desktop\test\log\out'
 PATH_SERVER = r'C:\Users\SL\Desktop\test\server'
 PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
-PATH_DF = r'./파일/채무자조회.xlsx'
+PATH_DF = r'./파일/채무자조회.pkl'
 
 
 # PATH = r'/volume1/스캔파일/새 스캔파일(업로드)'
-# PATH_HAND = r"/volume1/스캔파일/새 스캔파일(업로드)/수작업"
+# PATH_HAND = r"/volume1/스캔파일/새 스캔파일(업로드)/파일명에러"
 # PATH_LOG_SUCCESS = r'/volume1/스캔파일/스캔파일log/success'
 # PATH_LOG_FAIL = r'/volume1/스캔파일/스캔파일log/fail'
-# PATH_LOG_BASIC_EXCEPT = r'/volume1/스캔파일/스캔파일log/basic_except'
+# PATH_LOG_NOBASIC = r'/volume1/스캔파일/스캔파일log/nobasic'
+# PATH_LOG_OUT = r'C:\Users\SL\Desktop\test\log\out'
 # PATH_SERVER = r'/volume1/솔림헬프'
 # PATH_OUT = r'/volume1/삭제예정파일/관리제외'
-# PATH_DF = r'/volume1/스캔파일/스캔파일log/project/파일/채무자조회.xlsx'
+# PATH_DF = r'/volume1/스캔파일/스캔파일log/_project/파일/채무자조회.pkl'
 
 # 참조 df
 def dict_refer():
-    df_c = pd.read_excel(PATH_DF)
+    #df_c = pd.read_excel(PATH_DF)
+    df_c = pd.read_pickle(PATH_DF)
     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태]), df_c.iterrows()))
 dict_refer = dict_refer()
 
 # file_list
 def file_list(path) :
-    return [f.name for f in os.scandir(path) if f.is_file() and (f.name != 'Thumbs.db')]
+    p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif)$', re.I)
+    return [f.name for f in os.scandir(path) if f.is_file() and (re.search(p_extension, f.name))]
+    
 file_list = file_list(PATH)
+# 카운트
+cnt_total=len(file_list)
 
+## 파일이 없으면 바로 종료 ##
+if not cnt_total :  
+    print("파일 없음")
+    sys.exit(0)
+############################
 
 
 # 기본 변수
 docu_folder_dict = {"원인서류": "1.원인서류", "양도통지서": "2.양도통지서", "집행권원": "3.집행권원", "강제집행": "4.강제집행", "등본": "5.등초본",
               "초본": "5.등초본", "등초본":"5.등초본", "외국인증명": "5.등초본", "개인회생": "6.개인회생", "신용회복": "7.신용회복", "파산": "8.파산", "재산조사": "9.재산조사", "기타": "기타"}
 
-# 수정 및 분류를 위한 컴파일 -----------------------------
-# 키와 관리제외 확인을 위한 컴파일
-p_out = re.compile('개인회생\(면책\)|파산\(면책\)|환매|매각|종결')
+# 필수 요소에 대한 컴파일
 p_key = re.compile(r"([\d]{8})[\D]")  # match
-
-docu_list=["", "원인서류", "양도통지서", "집행권원", "강제집행", "등본",
-"초본", "외국인증명", "개인회생", "신용회복", "파산", "재산조사", "기타"]
-# 문서구분 수정하기 위한 컴파일
-p1=re.compile("원인 서류|입회 신청서|입회신청서")
-p2=re.compile("양도 통지서|채권\s?양도\s?통지서|\s?양통\s|\s양통\s?")  # ? 는 {0,1}, 세양통신 해결
-p3=re.compile("집행 권원|승계\s?집행문|판결문|지급\s?명령|이행\s?권고|화해\s?권고")
-p4=re.compile("결정문|결정|[가-힣]+\s?타채|강제 집행") # '결정'이 반복될 수 있으모르 count=1
-# p5 등본
-p_5except = re.compile("등본초본|초본등본|등초본")
-p6=re.compile("(?<![가-힣])원초본|(?<=원)원초본") # 이렇게까지 해야되냐? ㅠㅠ
-# p7 외국인증명. 컴파일 구문에서 외국인은 젤 끝에 와야 하는 거 유의
-p7 = re.compile("외국인\s?증명서?|외국인\s?등록\s?사실\s?증명서?|외국인\s?등록증?|외국인")
-# 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
-p8=re.compile(r"(?<!\d{2})개회|(?<!\d{2}\s)개회|개인 회생|(?<!개인)회생") 
-p9=re.compile("(?<![가-힣0-9])신복(?![가-힣])|신용\s*회복") #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
-# p10 파산
-p11=re.compile("재산 조사")
-
-# 사건번호 수정하기 위한 컴파일
-p_event1=re.compile(r"(?<=\D)(\d{4})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
-p_event2=re.compile(r"(?<=\D)(\d{2})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
-
-# 년월일 사이에 기호나 공백이 들어가 있는 경우로 찾아서 6자리로 맞춰준다.
-# 기호를 기준으로 쓰기 때문에 반드시 기호제거보다 나와야
-p_day4 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\d{1})(?!\d)\)?')
-p_day5 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\d{2})\)?')
-p_day6 = re.compile(r'\s?\(?\d{0,2}(?P<y>\d{2})[.-/\s](?P<m>\d{2})[.-/\s](?P<d>\d{2})\)?')
-
-# 항목별 저장을 위한 컴파일----------------------
-docu_kind = r'원인서류|양도통지서[\s]?\d차|양도통지서|집행권원[\s]?[재]?[도]?|강제집행|(?<!등기부)등본|(?<!원)초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
-#p_docu = re.compile(docu_kind)
-p_basic = re.compile(r'(\d{8})[_\s]?(\D+.+)[_\s]?(' + docu_kind + r')')
+docu_kind = r'원인서류|양도통지서[\s]?\d차|양도통지서|집행권원[\s]?[재]?[도]?|강제집행|등초본|(?<!등기부)등본|(?<!원)초본|외국인증명|개인회생|신용회복|파산|재산조사|기타'
+p_docu = re.compile(docu_kind)
 p_event = re.compile(r"\d{4}[ㄱ-ㅎ가-힣]{1,3}\d+")
 
-# 서버 업로드 성공 로그와 에러발생 로그
-error = []
-log = []
+p_basic = re.compile(r'(\d{8})[_\s]?(\D+.+)[_\s]?(' + docu_kind + r')')#event의 스타트 번호 >= basic의 엔드번호
+p_out = re.compile('개인회생\(면책\)|파산\(면책\)|환매|매각|종결')
 
-# 문서명 수정 사례 모음
-basic_except = [] # 수작업 폴더로 이동 나머지는 그냥 파일명 수정
-docu_except = []
-event_except = []
-day_except = []
-mark_except = []
+# 파일명 수정을 위한 컴파일---------------------------------------------------------------------
+# 연속공백은 무조건 처음에 하자(모든 컴파일에 공백은 ?로 처리했으므로)
+# 날짜
+# 년월일 사이에 기호나 공백이 들어가 있는 경우로 찾아서 6자리로 맞춰준다.
+# 괄호와 공백을 포함시켜서 모두 제거 대상으로하고 대체 단어에 앞공백만 추가
+# 기호를 기준으로 쓰기 때문에 반드시 기호제거보다 나와야
+p_day4 = re.compile(r'\s?\(?\s?(20|19)?(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\d{1})(?!\d)\s?\)?')
+p_day5 = re.compile(r'\s?\(?\s?(20|19)?(?P<y>\d{2})[.-/\s](?P<m>\d{1})[.-/\s](?P<d>\d{2})\s?\)?')
+p_day6 = re.compile(r'\s?\(?\s?(20|19)?(?P<y>\d{2})[.-/\s](?P<m>\d{2})[.-/\s](?P<d>\d{2})\s?\)?')
+#중간기호는 없고 괄호로 감싸진 경우
+p_day_4 = re.compile(r'\s?\(+\s?(20|19)?(?P<y>\d{2})(?P<m>\d{1})(?P<d>\d{1})(?!\d)\s?\)+')#괄호로 감싼거
+p_day_5 = re.compile(r'\s?\(+\s?(20|19)?(?P<y>\d{2})(?P<m>\d{1})(?P<d>\d{2})\s?\)+')#괄호로 감싼거
+p_day_6 = re.compile(r'\s?\(+\s?(20|19)?(?P<y>\d{2})(?P<m>\d{1,2})(?P<d>\d{1,2})\s?\)+')#괄호로 감싼거
 
-# 카운트
-cnt_total=len(file_list)
-cnt_out = 0
+# 사건번호
+p_event1=re.compile(r"(?<=\D)(\d{4})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
+p_event2=re.compile(r"(?<=\D)(\d{2})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
+# 문서구분
+docu_list=["", "원인서류", "양도통지서", "집행권원", "강제집행", "등본",
+"초본", "외국인증명", "개인회생", "신용회복", "파산", "재산조사", "기타"]
+p1=re.compile(r"원인\s?서류|입회\s?신청서")
+p2=re.compile(r"양도\s?통지서|채권\s?양도\s?통지서|\s?양통\s|\s양통\s?")  # ? 는 {0,1}, 세양통신 해결pass
+p3=re.compile(r"집행\s?권원|승계\s?(집행문)?|판결문|지급\s?명령|이행\s?권고|화해\s?권고") # count=1이 의미있게 하기 위해 올바른 표현도 넣는다.
+p4=re.compile(r"강제\s?집행|결정문|(?<!\d)\s?타채|(?<!개시)\s?결정") # 결정이라는 말이 여러곳에서 나올 수 있다.ex개인회생 회생결정
+# p5 등본 pass
+p5except = re.compile(r"등본초본|초본등본|등초본")
+p6=re.compile(r"(?<![가-힣])원초본|(?<=원)원초본") # 이렇게까지 해야되냐? ㅠㅠ
+# p7 외국인증명. 컴파일 구문에서 외국인은 젤 끝에 와야 하는 거 유의
+p7 = re.compile(r"외국인\s?증명서?|외국인\s?등록\s?사실\s?증명서?|외국인\s?등록증?|외국인")
+# 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
+p8=re.compile(r"(?<!\d)개회|개인\s?회생|(?<!개인)회생")
+p9=re.compile(r"(?<=[가-힣]{3})신복|[\s_]신복|신용\s?회복") #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
+# p10 파산 pass
+p11=re.compile(r"재산\s?조사|재산\s?조회")
+# ----------------------------------------------------------------------------------------------
 
+
+# 로그 리스트
+nobasic = [] # 파일명에러 폴더로 이동 나머지는 그냥 파일명 수정
+out = []
+success = []
+fail = []
+
+# 로직 흐름 -----------------------------------------------------
+# 파일명에러 : nobasic(f,k or d), 관리제외 : out(f,n), 솔림헬프 : success(f,n), 예외발생 : fail(f)
+# 1) 키 없으면 >> 파일명에러, continue
+#    키 있으면 key 값 저장
+# 2) 문서명 수정
+# 3) 사건번호 유 >> docu 없으면 | (있지만 !(docu.end<=event.start)) >> 파일명에러, continue
+#       docu, name : key 와 docu 사이, event저장, extra 저장
+#    사건번호 무 >> docu 없으면 >> 파일명에러, continue
+#      docu, name : key 와 docu 사이, extra 저장
+# 4) 리스트 담기, _ 연결하여 new_f완성
+# 5) 파일업로드 : 관리제외라면 out, 폴더설정 및 이동
+# 6) 예외처리 및 로그 작성
+#----------------------------------------------------------------
 
 
 for f in tqdm(file_list, total=cnt_total):
@@ -112,139 +135,137 @@ for f in tqdm(file_list, total=cnt_total):
         depth1, depth2, depth3,  = "", "", ""
         key, name, docu, event, extra = "", "", "", "", ""
 
-        # key 없는 거 수작업 폴더로
+        # key 없는 거 파일명에러 폴더로
         if not p_key.match(n):  
-            basic_except.append([f, "noKey"])
+            nobasic.append([f, "noKey"])
             shutil.move(join(PATH, f), join(PATH_HAND, f))
             continue
 
-        # key 있는 거 파일명 다듬기
-        # 1) 연속 공백 및 기타 기호 제외 : [_()]만 허용
+# key 파일명 다듬기__________________________________________________________
         else:
+            key = p_key.match(n).group(1)##############################  key
             
-            # 날짜, 주민번호 내부 공백 제거 및 예외 log추가-------
-            if p_day4.search(n):
-                day_except.append([n,"4자리"])
-                n = p_day4.sub(r" \g<y>0\g<m>0\g<d>", n)
-            elif p_day5.search(n) :
-                day_except.append([n,"5자리"])
-                n = p_day5.sub(r" \g<y>0\g<m>\g<d>", n)
-            elif p_day6.search(n) :
-                day_except.append([n,"6자리"])
-                n = p_day6.sub(r" \g<y>\g<m>\g<d>", n)
-            else : pass
-
-            # 연속 공백 및 기호 제외하기
+            # 연속 공백
             n = re.sub("[\s]{2,}", " ", n)
 
+            # 날짜, 주민번호 내부 공백 제거
+            if p_day4.search(n):
+                n = p_day4.sub(r" \g<y>0\g<m>0\g<d>", n)
+            elif p_day5.search(n) :
+                n = p_day5.sub(r" \g<y>0\g<m>\g<d>", n)
+            elif p_day6.search(n) :
+                n = p_day6.sub(r" \g<y>\g<m>\g<d>", n)
+            elif p_day_4.search(n) :
+                n = p_day_4.sub(r" \g<y>0\g<m>0\g<d>", n)
+            elif p_day_5.search(n) :
+                n = p_day_5.sub(r" \g<y>0\g<m>\g<d>", n)
+            elif p_day_6.search(n) :
+                n = p_day_6.sub(r" \g<y>\g<m>\g<d>", n)
+            else : pass
+
+            # 기호정리
             if re.search("[^a-zA-Zㄱ-ㅎ가-힣0-9\s_()]", n):
                 n = re.sub("[^a-zA-Zㄱ-ㅎ가-힣0-9\s_()]", "", n)
-                mark_except.append(f)
 
-            before = n
-############ basic 미통과 파일명 내부 수정(사실상 문서구분) : 기타정보에 문서구분 단어가 들어간 경우 수정을 하지 않기 위함
-            basic = p_basic.match(n)
-            if basic == None : # 필수 양식에 맞지 않는다.
-
-                # 문서구분 수정하기 -------------------------------
-                # 원인서류
-                if p1.search(n):
-                    n=p1.sub(docu_list[1], n, count=1)
-                # 양도통지서
-                elif p2.search(n):
-                    n=p2.sub(docu_list[2], n, count=1)  # 이름에 양통들어가는 경우가 있을 수 있어서 공백씀..
-                # 집행권원
-                elif p3.search(n):
-                    n=p3.sub(docu_list[3], n, count=1)
-                elif p4.search(n):
-                    n=p4.sub(docu_list[4], n, count=1)
-                elif p6.search(n):
-                    n=p6.sub(docu_list[6], n, count=1)
-                elif p7.search(n):
-                    n=p7.sub(docu_list[7], n, count=1)
-                elif p8.search(n):
-                    n=p8.sub(docu_list[8], n, count=1) # 개회 반복될 수 있음
-                elif p9.search(n):
-                    n=p9.sub(docu_list[9], n, count=1)
-                elif p11.search(n):
-                    n=p11.sub(docu_list[11], n, count=1)
-            else : pass
-            
-            after_docu = n
-                
-            # 변경 내역 기록
-            if before != after_docu :
-                docu_except.append((f, after_docu))
-            else : pass
-            
-############  basic과 무관 사건번호 수정하기 -------------------------------
-            # 1) 사건번호 내부 공백 제거, 사건번호만 있으면 공백이 없어도 체크되므로 예외 추가는 전후 비교 후
+            # 사건번호 : 내부 공백 제거 및 연도에 20 없으면 추가
             if p_event1.search(n):
                 n=p_event1.sub(r'\1\2\3', n)
                 # 1) + 사건번호 연도가 yy라면
             elif p_event2.search(n):
                 n=p_event2.sub(r'20\1\2\3', n)
-            else : pass
+            else : pass 
 
-            after_event = n
+            # 법원문서 중 문서구분 서치 범위 설정
+            e_s = None
+            if p_event.search(n) :
+                e_s = p_event.search(n).start()
+
+            # 문서구분 수정하기 -------------------------------
+            # 원인서류
+            if p1.search(n):
+                n=p1.sub(docu_list[1], n, count=1)
+            # 양도통지서
+            elif p2.search(n):
+                n=p2.sub(docu_list[2], n, count=1)  # 이름에 양통들어가는 경우가 있을 수 있어서 공백씀..
+            # 집행권원
+            elif p3.search(n[:e_s]):
+                n=p3.sub(docu_list[3], n, count=1)
+            # 강제집행
+            elif p4.search(n[:e_s]):
+                n=p4.sub(docu_list[4], n, count=1)
+            # 등초본
+            elif p5except.search(n) :
+                n=p5except.sub("등초본", n, count=1)
+            # 초본
+            elif p6.search(n):
+                n=p6.sub(docu_list[6], n, count=1)
+            # 외국인 증명
+            elif p7.search(n):
+                n=p7.sub(docu_list[7], n, count=1)
+            #개인회생
+            elif p8.search(n[:e_s]):
+                n=p8.sub(docu_list[8], n, count=1) # 개회 반복될 수 있음
+            #신용회복
+            elif p9.search(n[:e_s]):
+                n=p9.sub(docu_list[9], n, count=1)
+            #재산조사
+            elif p11.search(n):
+                n=p11.sub(docu_list[11], n, count=1)
+
             
-            # 사건번호 변경됐을 경우 예외 log 추가
-            if after_docu != after_event :
-                event_except.append((f, after_event))
-
-            
-
-########## 문서구분 변경 후 필수 요소 재확인 후 new_f 완성
-
-            basic = p_basic.match(n)
-            if basic == None : # 필수 양식에 맞지 않는다.
-                shutil.move(join(PATH, f), join(PATH_HAND, (n+ext)))
-                basic_except.append([f, n+ext])
+# 새 파일명(new_f) 만들기__________________________________________________________
+            if not p_docu.search(n) : #docu없으면
+                nobasic.append([f, "nodocu"])
+                shutil.move(join(PATH, f), join(PATH_HAND, f))
                 continue
 
-            elif p_5except.search(n) :
-                key = n[:8]
-                name = n[8:p_5except.search(n).start()].replace("_", " ").strip()
-                docu = '등초본'
+            else : #docu 있으면
+                d_obj = p_docu.search(n)##############################  docu, name
+                name = n[8:d_obj.start()].replace("_", " ").strip() #replace가 먼저나와야
+                docu = d_obj.group().strip() #양통, 집행권원 때문에 strip 필요
+
+                if len(name) < 2 : 
+                    nobasic.append([f, "noname"])
+                    shutil.move(join(PATH, f), join(PATH_HAND, f))
+                    continue
+                else : pass
                 
-            else :
+                
+                if not p_event.search(n) : #사건번호 없으면
+                    ##############################  extra
+                    extra=n[d_obj.end():].strip().replace(" ", "_") #strip이 먼저 나와야
+                else :  # 사건번호 있으면
+                    e_obj = p_event.search(n)
+                    event = e_obj.group()##############################  event
+                    extra = n[e_obj.end():].strip().replace(" ", "_")##############################  extra
+                    if d_obj.end() > e_obj.start() : # 사건번호앞에 문서구분 없는 경우
+                        nobasic.append([f, "nodocu"])
+                        shutil.move(join(PATH, f), join(PATH_HAND, f))
+                        continue
+                    else : pass #문서구분 - 사건번호 
 
-                # 필수3요소 변수 저장
-                key=basic.group(1)
-                name=basic.group(2).strip()  # [/D]가 공백을 포함하므로
-                docu=basic.group(3).strip()  # n차, 재도 때문에 공백을 포함한다.
-
-            # (continue덕에 앞에 탭위치 앞으로)사건번호, 기타정보 변수 저장
-            if p_event.search(n):
-                temp=p_event.search(n)
-                event=temp.group() # 이벤트
-                extra=n[temp.end():].strip().replace(" ", "_") # 기타 정보, 앞뒤 공백은 제거하고 중간 공백은 _로
-            else:
-                extra=n[basic.end():].strip().replace(" ", "_") # 기타 정보, 앞뒤 공백은 제거하고 중간 공백은 _로
-
-            # 새 이름 만들기
+            # new_f
+            # continue 모두 해줬기 때문에 try 안에만 있으면 된다(현재는 key있는 경우)
             name_items = [key, name, docu]
             if event : name_items.append(event)
-            if extra : name_items.append(extra)
+            if extra : name_items.append(extra) #일련번호나 _로 끝나는 경우는 re_name에서 제거해줌
 
             new_f = "_".join(name_items)+ext
             # 마지막에 _ 두개 인 경우 꼭 해줘야 해.
             new_f = re.sub("[_]{2,}", "_", new_f)
 
-########## 서버 올리기 ---------------------------------------------------------
+# 서버 올리기__________________________________________________________
 
-            # 1) depth1 문서종류 매칭
-            
-
-            depth3=f[:8]  # 채무자키, 다 확인한 뒤니까 그냥 이렇게 해도 돼
+            # 폴더 이름
+            depth1 = ""
+            depth3=key
             try :
                 depth2=dict_refer[depth3][0]  # 매각사구분
             except Exception as e:
-                error.append([f, e.__class__, e])
-                #basic_except.append([f, new_f])
+                fail.append([f, e.__class__, e])
+                #nobasic.append([f, new_f])
                 shutil.move(join(PATH,f), join(PATH_HAND, new_f))
                 continue
-            depth1=""  # 문서종류
 
             # 관리제외 파일이라면
             if p_out.match(dict_refer[depth3][1]):
@@ -252,7 +273,7 @@ for f in tqdm(file_list, total=cnt_total):
                 if not os.path.exists(out_dir):
                     os.makedirs(out_dir)
                 shutil.move(join(PATH, f), join(out_dir, new_f))
-                cnt_out += 1
+                out.append([f, new_f])
                 continue
 
             # 관리중인 파일이면
@@ -260,12 +281,12 @@ for f in tqdm(file_list, total=cnt_total):
 
                 # depth1
                 for key, value in docu_folder_dict.items():
-                    if re.search(key, new_f):
+                    if re.search(key, docu):
                         depth1=value
                         break
 
                 if depth1 == "" : #docu검사는 이미 했음.
-                    basic_except.append([new_f, "keyError"])
+                    nobasic.append([new_f, "keyError"])
                     shutil.move(join(PATH,f), join(PATH_HAND, new_f))
                     continue
 
@@ -277,41 +298,40 @@ for f in tqdm(file_list, total=cnt_total):
                     os.makedirs(dst_dir)  # 미리 만들어뒀으니 mkdir해도 됨
 
                 # 파일이동
-                log.append(ff.re_name(join(PATH, f), join(dst_dir, new_f)))
+                success.append(ff.re_name(join(PATH, f), join(dst_dir, new_f)))
 
     except Exception as e:
         print("===================================")
         time = datetime.today().strftime("%H:%M:%S")
         print(time)
-        print(f, e.__class__, e, sep=" : ")
+        print(f, n, e.__class__, e, sep=" : ")
         print(traceback.format_exc())
-        error.append([f, e.__class__, e])
+        fail.append([f, e.__class__, e])
         continue  # 반복문 계속 돌아
 #### 반복문 끝########################################
 
-#### log #################################
+# log 작성 및 결과 출력__________________________________________________________
 try :
-    ff.write_log_csv(log, PATH_LOG_SUCCESS)
-    ff.write_log_csv(error, PATH_LOG_FAIL)
-    ff.write_log_csv(basic_except, PATH_LOG_BASIC_EXCEPT)
+    ff.write_log_csv(success, PATH_LOG_SUCCESS)
+    ff.write_log_csv(fail, PATH_LOG_FAIL)
+    ff.write_log_csv(nobasic, PATH_LOG_NOBASIC)
+    ff.write_log_csv(out, PATH_LOG_OUT)
 except :
     pass
-######################
 
-cnt_hand = len(basic_except)
-if cnt_total == len(log) + len(error) + cnt_hand + cnt_out :
+if cnt_total == len(success) + len(fail) + len(nobasic) + len(out) :
     print("처리된 파일에 누수 없음")
 else :
     print("처리된 파일에 누수 있음")
 
-print(f'{cnt_total}개의 파일 중 {len(log)}개 서버, {cnt_out}개 관리제외, {cnt_hand}개 수작업, {len(error)}개 예외')
+print(f'{cnt_total}개의 파일 중 {len(success)}개 서버, {len(out)}개 관리제외, {len(nobasic)}개 파일명에러, {len(fail)}개 예외')
         
 
-if docu_except :
-    print("docu", *docu_except, sep='\n')
-if event_except :
-    print("event", *event_except, sep='\n')
-if day_except :
-    print("day", *day_except, sep='\n')
-if mark_except :
-    print("mark", *mark_except, sep='\n')
+# if docu_except :
+#     print("docu", *docu_except, sep='\n')
+# if event_except :
+#     print("event", *event_except, sep='\n')
+# if day_except :
+#     print("day", *day_except, sep='\n')
+# if mark_except :
+#     print("mark", *mark_except, sep='\n')

@@ -58,8 +58,8 @@ def re_name(src: str, dst: str) -> list:
     ext = os.path.splitext(f_name)[1]
 
     # date = re.sub("[\D][\d]{6}") 
-    numbering = r'(_[(][\d]{1,2}[)]|_[\d]{1,2}|[\s]*[(][\d]{1,2}[)]|[\s]+[\d]{1,2})$'
-    temp = re.sub(numbering, "", stem)  # 모든 넘버링 제거 _ , 괄호, 공백 뒤에 나오는 숫자 1~2자리
+    numbering = r'(_[(][\d]{1,2}[)]_?|_[\d]{1,2}|[\s]*[(][\d]{1,2}[)]_?|[\s]+[\d]{1,2}_?)$'
+    temp = re.sub(numbering, "", stem)  # 모든 넘버링 및 _로 끝나는 경우 제거 _ , 괄호, 공백 뒤에 나오는 숫자 1~2자리
     new_name = temp + ext
 
     i = 1
@@ -463,7 +463,7 @@ def write_log_csv(log:list, path : str) -> None:
         
         name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) +".csv" 
                     
-        with open (join(path, name), "a", newline="") as p :
+        with open (join(path, name), "a", newline="", encoding='utf-8-sig') as p :
             for row in log :
                 wr = csv.writer(p)
                 wr.writerow(row)
