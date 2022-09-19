@@ -67,8 +67,11 @@ def re_name(src: str, dst: str) -> list:
         new_name = temp + "_"+"("+str(i)+")"+ext
         i += 1
 
-    dst_final = dir + "/" + new_name
-    shutil.move(src, dst_final)
+    if not os.path.exists(dir):
+        os.makedirs(dir)  # 미리 만들어뒀으니 mkdir해도 됨
+    
+    shutil.move(src, join(dir, new_name))
+
     
 
     return [os.path.split(src)[0],os.path.split(src)[1], new_name, dir]

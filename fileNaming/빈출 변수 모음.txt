@@ -4,7 +4,7 @@
 p_basic = re.compile(r'(\d{8})\s?(\D+.+)('+docu_kind+r')')
 
 ### 채무자키 match
-p_key = re.compile(r"([\d]{8})[\D]") #match
+p_key = re.compile(r"[\d]{8}(?!\d)") #match
 
 p_key.match(f).group(1)
 
@@ -57,16 +57,16 @@ p_out.match()
 
 
 -----import--------------------------------------------------------------
-import os
+import os, sys
 import shutil
-import time
 import pandas as pd
-from tqdm import tqdm      #tqdm(filelist, total = len(file_list), position=0, leave=True)
+from tqdm import tqdm      
 import re
 from pathlib import Path
 import traceback
 from os.path import join
 import file_function as ff
+import time
 from datetime import datetime
 
 -----except--------------------------------------------------------------
