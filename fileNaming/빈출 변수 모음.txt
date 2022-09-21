@@ -31,8 +31,8 @@ p_day = re.compile(r"(?<=\D)\d{2}(\d{6})") #후방탐색 있으니 채무자키�
 
 -----채무자키 대체------
 ### 사업자/주민번호
-p_regit1 = re.compile(r'([\d]{3})-\d\d-\d\d\d\d\d[\D]+')
-p_regit2 = re.compile(r'([\d]{6})-([\d]{6})[\D]+')
+p_regit1 = re.compile(r'([\d]{3})-\d\d-\d\d\d\d\d')
+p_regit2 = re.compile(r'([\d]{6})-([\d]{7})')
 
 ### 관리자키  match
 p_admin10 = re.compile(r'[\d]{10}[\D]') #match
@@ -82,6 +82,10 @@ from datetime import datetime
 -----기본 작성--------------------------------------------------------------
 path = r'C:\Users\jbmyo\Desktop\test'
 file_list = [f.name for f in os.scandir(path) if f.is_file()]
+
+#p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif)$', re.I)
+#file_list = [f.name for f in os.scandir(path) if f.is_file() and (re.search(p_extension, f.name))]
+
 log_path = r'D:\0.전산\1.진행중과업\파일서버개편\log'
 log = []
 error = []
