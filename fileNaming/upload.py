@@ -28,7 +28,7 @@ PATH_DF = r'./파일/채무자조회.pkl'
 # PATH_LOG_SUCCESS = r'/volume1/스캔파일/스캔파일log/success'
 # PATH_LOG_FAIL = r'/volume1/스캔파일/스캔파일log/fail'
 # PATH_LOG_NOBASIC = r'/volume1/스캔파일/스캔파일log/nobasic'
-# PATH_LOG_OUT = r'C:\Users\SL\Desktop\test\log\out'
+# PATH_LOG_OUT = r'/volume1/스캔파일/스캔파일log/out'
 # PATH_SERVER = r'/volume1/솔림헬프'
 # PATH_OUT = r'/volume1/삭제예정파일/관리제외'
 # PATH_DF = r'/volume1/스캔파일/스캔파일log/_project/파일/채무자조회.pkl'
@@ -43,7 +43,7 @@ dict_refer = dict_refer()
 # file_list
 def file_list(path) :
     p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif)$', re.I)
-    return [f.name for f in os.scandir(path) if f.is_file() and (re.search(p_extension, f.name))]
+    return [f.name for f in os.scandir(path) if f.is_file() and (p_extension.search(f.name))]
     
 file_list = file_list(PATH)
 # 카운트
@@ -82,14 +82,14 @@ p_day6 = re.compile(r'\s?\(?\s?(?<=\D)(20|19)?(?P<y>\d{2})[./\-\s](?P<m>\d{2})[.
 p_day_4 = re.compile(r'\s?\(+\s?(20|19)?(?P<y>\d{2})(?P<m>\d{1})(?P<d>\d{1})(?!\d)\s?\)+')#괄호로 감싼거
 p_day_5 = re.compile(r'\s?\(+\s?(20|19)?(?P<y>\d{2})(?P<m>\d{1})(?P<d>\d{2})\s?\)+')#괄호로 감싼거
 p_day_6 = re.compile(r'\s?\(+\s?(20|19)?(?P<y>\d{2})(?P<m>\d{1,2})(?P<d>\d{1,2})\s?\)+')#괄호로 감싼거
-#괄호,중간기호 없이 숫자만 6/8자리 있는 경우
-p_day_d = re.compile(r'(?<!\d)(20)?(?P<y>[0-2][0-9])(?P<m>[0-1][0-9])(?P<d>[0-3][0-9])(?!\d)')
+#괄호,중간기호 없이 숫자만 6/8자리 있는 경우. 발급일을 찾는 것이므로 최대한 보수적으로. 잘못하면 사건번호를 가져옴
+p_day_d = re.compile(r'(?<!\d)(20)?(?P<y>[2][012])(?P<m>[0-1][0-9])(?P<d>[0-3][0-9])(?!\d)')
 #day변수에 담을 것
 p_day = re.compile(r"#(\d{6})")
 
 
-# 사건번호 - 한글 앞뒤로 띄어쓰기 모두 해버리면 이름 앞뒤로 나오는 숫자까지 포함해버린다. 그리고 연도에 맞게 강화했다.
-p_event1=re.compile(r"(?<=\D)([12][09]\d\d)([ㄱ-ㅎ가-힣]{1,3})\s([0-9]+)|(?<=\D)([12][09]\d\d)\s([ㄱ-ㅎ가-힣]{1,3})([0-9]+)")
+# 사건번호 - |를 사용하면 그룹이 안 먹어버리네..
+p_event1=re.compile(r"(?<=\D)(19\d\d|20\d\d)\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
 # event2의 경우 띄어쓰기 안한 거를 event에서 매치를 못하므로 앞뒤 공백 모두 ? 해줘야 겠네...
 p_event2=re.compile(r"(?<=\D)(\d{2})\s?([ㄱ-ㅎ가-힣]{1,3})\s?([0-9]+)")
 # 문서구분
@@ -119,9 +119,9 @@ p_etc = re.compile("행자부|재산\s?명시|접수증|집행문\s?부여의\s?
 
 # 제거할거
 #p_rm = re.compile(r"\(?\s?[a-zA-Z\d]{2,}-[a-zA-Z\d]{2,}-[a-zA-Z\d]{2,}\s?\)?|\(?\s?[a-zA-Z0-9]{4,}-[a-zA-Z0-9]{4,}\s?\)?|\(?\s?\d{10,}\s?\)?|(?<![가-힣\d])[3-9]\d{5,}(?!가-힣\d])|(?<![가-힣\d])\d{4}(?![가-힣\d])")
-p_rm = re.compile(r"TAA\(회\)|SCSB|[a-zA-Z\-\d_]{2,}_[a-zA-Z\-\d_]{4,}|\(?\s?[a-zA-Z][\d]{9,}\s?\)?|\(?\s?[a-zA-Z\d]{2,}-[a-zA-Z\d]{2,}-[a-zA-Z\d]{2,}\s?\)?|\(?\s?[a-zA-Z0-9]{4,}-[a-zA-Z0-9]{4,}\s?\)?|\(?\s?\d{10,}\s?\)?|(?<![가-힣\d])[13-9]\d{5,}(?!가-힣\d])|(?<![가-힣\d])\d{3,4}(?![가-힣\d])|(?<![가-힣\d])\d{6}[\-_]\d{6}(?!가-힣\d])|(-)?\d{1,3}(,\d{3})+(\.\d+)?")
-#                                 언더바로 연결된 영어,숫자 키(C1_3284792)                         2개의 하이픈으로 연결된 영어 및 숫자          하이픈 또는 언더바로 연결된 4자리 이상의 영숫자(주민번호 포함)  10자리키          날짜 아닐 6자리 이상 단독 숫자      3~4자리의 단독 숫자                 앞과 교집합있지만, 확실한 주민번호       금액
-p_sign = re.compile("[^a-zA-Zㄱ-ㅎ가-힣0-9\s_()]|\(\s?\)|_ | _|  ")
+p_rm = re.compile(r"ADMIN.*Conflict|TAA\(회\)|SCSB|(?<![a-zA-Z])[a-zA-Z][\d]?[_\-][a-zA-Z\-\d_]{4,}|\(?\s?[a-zA-Z][\d]{9,}\s?\)?|\(?\s?[a-zA-Z\d]{2,}-[a-zA-Z\d]{2,}-[a-zA-Z\d]{2,}\s?\)?|\(?\s?[a-zA-Z0-9]{4,}-[a-zA-Z0-9]{4,}\s?\)?|\(?\s?\d{10,}\s?\)?|(?<![가-힣\d])\d{6}[\-_](\d{1}|\d{6})(?![가-힣\d])|(?<![가-힣\d])[13-9]\d{5,}(?!가-힣\d])|(?<![가-힣\d])\d{3,4}(?![가-힣\d])|(-)?\d{1,3}(,\d{3})+(\.\d+)?")
+#                                                        언더바로 연결된 영어1,숫자(0~1)-_                                            2개의 하이픈으로 연결된 영어 및 숫자                      하이픈으로 연결된 4자리 이상의 영숫자(주민번호 포함)  10자리키      앞과 교집합있지만, 확실한 주민번호(단독숫자앞에있어야)     날짜 아닐 6자리 이상 단독 숫자           3~4자리의 단독 숫자                   금액
+p_sign = re.compile("[^㈜a-zA-Zㄱ-ㅎ가-힣0-9\s_()]|\(\s?\)|_ | _|  ")
 # ----------------------------------------------------------------------------------------------
 
 
