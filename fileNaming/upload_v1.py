@@ -23,7 +23,7 @@ PATH_OUT = r'C:\Users\SL\Desktop\test\관리제외'
 PATH_DF = r'./파일/채무자조회.pkl'
 
 
-# PATH = r'/volume1/스캔파일/새 스캔파일(업로드)'
+# PATH = r'/volume1/스캔파일/새 스캔파일(업로드)' ####################
 # PATH_HAND = r"/volume1/스캔파일/새 스캔파일(업로드)/파일명에러"
 # PATH_LOG_SUCCESS = r'/volume1/스캔파일/스캔파일log/success'
 # PATH_LOG_FAIL = r'/volume1/스캔파일/스캔파일log/fail'
@@ -42,7 +42,7 @@ dict_refer = dict_refer()
 
 # file_list
 def file_list(path) :
-    p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif)$', re.I)
+    p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif|m4a)$', re.I)
     return [f.name for f in os.scandir(path) if f.is_file() and (p_extension.search(f.name))]
     
 file_list = file_list(PATH)
@@ -101,7 +101,7 @@ p3=re.compile(r"집행\s?권원|승계\s?(집행문)?|판결문|지급\s?명령|
 p4=re.compile(r"강제\s?집행|(채권)?\s?(추심|압류|가압류)?\s?결정(문)?|채권\s?가압류\s?(결정)?(문)?|결정문|(?<!\d)\s?타채|(?<!개시)\s?결정|채권압류\s?및\s?추심명령|배당[가-힣]+") # 결정이라는 말이 여러곳에서 나올 수 있다.ex개인회생 회생결정
 #p4_1=re.compile(r"(배당[가-힣]+") 차분히 만들자
 
-p5=re.compile(r'\(?\s?법인\s?등기부\s?(등본)?\s?\)?|\(?\s?(법인)?\s?등본\s?\)?|\(?\s?주민\s?등록\s?등본\s?\)?')
+p5=re.compile(r'\(?\s?법인\s?등기부\s?(등본)?\s?\)?|\(?\s?(법인)?\s?등[기|본]\s?\)?|\(?\s?주민\s?등록\s?등본\s?\)?')
 p5except = re.compile(r"\(?\s?등본.{0,3}원?초본\s?\)?|\(?\s?원?초본.{0,3}등본\s?\)?|\(?\s?등\s?초본\s?\)?|\(?\s?주민\s?등록\s?등본\s?및?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?및?\s?등본\s?\)?") # '등본 및 초본' 때문에 .{0,3}
 p6=re.compile(r"(?<![가-힣])원초본|(?<=원)원초본|(?<![가-힣])\(?\s?원\s?초본\s?\)?|(?<=[가-힣]{3})원초본|\(?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?\)?") # 이렇게까지 해야되냐? ㅠㅠ
 # p7 외국인증명. 컴파일 구문에서 외국인은 젤 끝에 와야 하는 거 유의
@@ -110,7 +110,7 @@ p7 = re.compile(r"\(?\s?외국인\s?증명서?\s?\)?|\(?\s?외국인\s?등록\s?
 # 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
 p8=re.compile(r"(?<!\d)개회|개인\s?회생|(?<!개인)회생")
 p9=re.compile(r"(?<=[가-힣]{3})신복|[\s_]신복|신용\s?회복") #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
-p10=re.compile("파산")
+p10=re.compile("파산|면책")
 p11=re.compile(r"재산\s?조사|재산\s?조회") # 상세문서를 재산조사가 대체하는 게 아님에 유의
 p12=re.compile(r"부채\s?증명\s?[서원]?류?")
 
@@ -307,12 +307,13 @@ for f in tqdm(file_list, total=cnt_total):
             # continue 모두 해줬기 때문에 try 안에만 있으면 된다(현재는 key있는 경우)
             name_items = [key, name, docu]
             if event : name_items.append(event)
-            if extra : name_items.append(extra) #일련번호나 _로 끝나는 경우는 re_name에서 제거해줌
+            if extra : name_items.append(extra) #일련번호나는 re_name에서 제거해줌
             if day : name_items.append(day)
             print(f'307 항목리스트 : {name_items}')  #임시프린트######################
-            new_f = "_".join(name_items)+ext
+            new_f = "_".join(name_items)
             # 마지막에 _ 두개 인 경우 꼭 해줘야 해.
-            new_f = re.sub("[_]{2,}", "_", new_f)
+            new_f = re.sub("_{2,}", "_", new_f)
+            new_f = re.sub("_+$", "", new_f)+ext
             print(f'311 new_f 합치고 2개언더바제거 : {new_f}')  #임시프린트######################
 
 # 서버 올리기__________________________________________________________

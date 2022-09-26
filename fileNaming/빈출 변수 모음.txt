@@ -135,3 +135,7 @@ def dict_refer():
     df_c = pd.read_excel(r'/volume1/스캔파일/스캔파일log/project/파일/채무자조회.xlsx')
     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태]), df_c.iterrows()))
 dict_refer = dict_refer()
+
+
+------------------------------------------------------
+new_name = "_".join(filter(lambda x :bool(x), dict.values()))
