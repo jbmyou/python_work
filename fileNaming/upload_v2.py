@@ -27,9 +27,9 @@ from datetime import datetime
 def getPath(purpose:str) :
     """
     'nas' : 새 스캔파일(업로드), nas내부 주소 \n
-    'filetest' : pc바탕화면/test, 로그는 파일서버개편 폴더 \n
     'done' : 검수완료, 네트워크 경로 \n
-    'test' : 스캔파일log/success, 로그는 파일서버개편 \n
+    'fileTest' : pc바탕화면/test, 로그는 파일서버개편 폴더 \n
+    'logTest' : 스캔파일log/success, 로그는 파일서버개편 \n
     """
     path = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)' 
     path_server = r'\\192.168.0.75\솔림헬프'
@@ -54,7 +54,7 @@ def getPath(purpose:str) :
         ### dict_referFnc 안 읽어지면 절대경로 담은 변수 직접 넣으라고
     elif purpose == "logTest" : # 파일 이동이 일어나지 않는다.
         path = r'\\192.168.0.75\스캔파일\스캔파일log\success'
-        path_server = r'/volume/솔림헬프'
+        path_server = r'/volume1/솔림헬프'
         path_log_success = r'D:\0.전산\1.진행중과업\파일서버개편\log\success'
     elif purpose == "nas" : pass
     
@@ -81,53 +81,56 @@ def getPath(purpose:str) :
     #     ### dict_referFnc 안 읽어지면 절대경로 담은 변수 직접 넣으라고
     # elif purpose == "logTest" : # 파일 이동이 일어나지 않는다.
     #     path = r'/volume1/스캔파일/스캔파일log/success'
-    #     path_server = r'/volume/솔림헬프'
+    #     path_server = r'/volume1/솔림헬프'
     #     path_log_success = r'D:\0.전산\1.진행중과업\파일서버개편\log\success'
     # elif purpose == "nas" : pass
 
     return path, path_server, path_nobasic, path_out, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df
 
-# 사해행위는 판결, 품의서, 예고서 등 다방면에 걸쳐있어 키워드로 부적합
-comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. 단 가압류와 압류처럼 가?압류로 표현할 수 있는 것은 순서 상관이 없음
-        "원인서류" : re.compile(r"원인\s?서류|(입회|가입|카드)\s?신청서|(신용)?\s?대출\s?(신청서)?|(분할)?\s?약정서|녹취록?|통화\s?(내용|내역)|(대출)?\s?원장|마이너스\s?대출,종[적족]\s?조회"),
-        "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)"), # 세양통신 해결
-
-        # 사건번호 내부는 이제 신경쓰지 않아도 된다.
-        "파산" : re.compile("파산|면책"),
-        # 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
-        "개인회생" : re.compile(r"개회|(개인)?\s?회생"),
-        "신용회복" : re.compile(r"(?<=[가-힣]{3})신복|[\s_]신복|신용\s?회복"), #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
-        # 판결문과 결정문이 여러곳에서 나올 수 있어 뒤로 뺌. 결정과 판결은 더욱 애매해서 제외함
-        "집행권원" : re.compile(r"집행\s?권원|승계\s?(집행|결정)?(문)?|판결문|지급\s?(명령\s?(결정문)?|결정문?)|이행\s?권고|화해\s?권고"), # count=1이 의미있게 하기 위해 올바른 표현도 넣는다.
-        "집행권원 재도" : re.compile(r"(?<!\b[가-힣])재도건?|\b재도건?|수통|재교부건?|재발급건?"),
-        "강제집행" : re.compile(r"강제\s?집행|\s?타채|압추|(채권)?\s?압류\s?및?\s?추심\s?(명령|결정)?문?|추심\s?및?\s?압류\s?(명령|결정)?문?|(채권)?\s?(추심|가?압류)\s?(결정)?(문)?|(?<!개시)\s결정문?|재산\s?명시|유체|부?동산|경매|배당[가-힣]+"), # 결정이라는 말이 여러곳에서 나올 수 있다.ex개인회생 회생결정
-            #배당과 가압류는 살리자                               #압류와 추심                                추심과압류                           둘중 하나만
-        "재산조사" : re.compile(r"재산\s?조사|재산\s?조회"), # 상세문서를 재산조사가 대체하는 게 아님에 유의
-        "부채증명서" : re.compile(r"부채\s?증명\s?[서원]?류?"),
-        "신용조회" : re.compile(r"KCB|NICE|나이스|신용\s조회", re.I),
-
-        # p7 외국인증명. 컴파일 구문에서 외국인은 젤 끝에 와야 하는 거 유의
-        "외국인증명" : re.compile(r"\(?\s?외국인\s?증명서?\s?\)?|\(?\s?외국인\s?등록\s?사실\s?증명서?\s?\)?|\(?\s?외국인\s?등록증?\s?\)?|\(?\s?외국인\s?\)?"),
-        "등초본" : re.compile(r"\(?\s?등본.{0,3}원?초본\s?\)?|\(?\s?원?초본.{0,3}등본\s?\)?|\(?\s?등\s?초본\s?\)?|\(?\s?주민\s?등록\s?등본\s?및?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?및?\s?등본\s?\)?"), # '등본 및 초본' 때문에 .{0,3}
-        "등본" : re.compile(r'\(?\s?법인\s?등기부\s?(등본)?\s?\)?|\(?\s?(법인)?\s?등[기|본]\s?\)?|\(?\s?주민\s?등록\s?(등본|정보)\s?\)?'), #제적_등본 ('등본_제적등본'보다 '제적_등본'이 나은듯..)
-        "개인정보" : re.compile(r'행자부|신분증|수급자|인감\s증명서|기본\s?증명서|(가족|혼인)\s?관계\s?증명서?|입양|친양자|졸업|병적|인감', re.I),
-        "초본" : re.compile(r"(?<![가-힣])원초본|(?<=원)원초본|(?<![가-힣])\(?\s?원\s?초본\s?\)?|(?<=[가-힣]{3})원초본|\(?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?\)?"), # 말소자_초본
-        "기타" : re.compile(r"기타|집행문\s?부여의\s?소|신용\s?조회|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|분할|상환|감면|채무\?조정|(상속)?\s?한정\s?승인|상속\s?포기") # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
-        #p4_1=re.compile(r"(배당[가-힣]+") 차분히 만들자                            
-    }
-comp2 = { # 부수정보(대체 후 삭제) / 일부 키워드는 사려야 할 때
-    "재도" : re.compile(r"재도건?|부여건?|재발급건?|재교부건?|수통\s?(부여)?"),
-    "차수" : re.compile(r"(?<!\d)\d차"), 
-    "양통종적" : re.compile(r"종[적족]\s?조회|기타"), #종적조회는 모두 양통만 있더라
-    "강제집행" : re.compile(r"강제\s?집행|\s?타채|압추|(채권)?\s?압류\s?및?\s?추심\s?(명령|결정)?문?|추심\s?및?\s?압류\s?(명령|결정)?문?|채권\s?(추심|(?<!가)압류)\s?(결정)?(문)?|(?<!개시)결정문?")
-}
-
-path_df = r'./파일/채무자조회.pkl' ##################### 주의
+path_df = r'./파일/채무자조회.pkl' 
 def dict_referFnc(path_df):
     """dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명]"""
     df_c = pd.read_pickle(path_df)
     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태, x[1].성명]), df_c.iterrows()))
 dict_refer = dict_referFnc(path_df) ################## 전역변수로 둬야 함. 함수에서도 쓰고, main에서도 쓴다.
+
+# 사해행위는 판결, 품의서, 예고서 등 다방면에 걸쳐있어 키워드로 부적합
+comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. 단 가압류와 압류처럼 가?압류로 표현할 수 있는 것은 순서 상관이 없음
+        "개인정보1" : re.compile(r"신분증|(기초)?수급자?|차상위|(법인|사용)?\s?인감|기본\s?증명서|(가족|혼인)\s?관계|이혼|입양|친양자|졸업|병적"),
+        "원인서류" : re.compile(r"원인\s?서류|(입회|가입|카드)\s?신청서|(신용)?\s?대출\s?(신청서)?|(분할)?\s?약정서|녹취록?|통화\s?(내용|내역)|(대출)?\s?원장|마이너스\s?대출,종[적족]\s?조회"),
+        "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)"), # 세양통신 해결
+        "양도통지서1" : re.compile(r"종[적족]\s?조회"), #종적조회는 모두 양통만 있더라
+        "양도통지서 차수" : re.compile(r"(?<!\d)\d차"), 
+        # 사건번호 내부는 이제 신경쓰지 않아도 된다.
+        "파산" : re.compile(r"파산|면책|파산.*면책"), #파산에도 배당있음. 강제집행보다 먼저 나와야
+        # 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
+        "개인회생" : re.compile(r"개회|(개인)?\s?회생"),
+        "신용회복" : re.compile(r"(?<=[가-힣]{3})신복|[\s_]신복|신용\s?회복"), #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
+        "신용회복1" : re.compile(r"채무\?조정안?|실효자\s?원상|원상\s?회복|신청인\s?현황"),
+        "재산조사" : re.compile(r"재산\s?조사|재산\s?조회"), # 상세문서를 재산조사가 대체하는 게 아님에 유의
+        "재산조사1" : re.compile(r"(?<!법인)\s등기|가압류\s?물건지"),
+        # 판결문과 결정문이 여러곳에서 나올 수 있어 뒤로 뺌. 결정과 판결은 더욱 애매해서 제외함
+        "집행권원" : re.compile(r"집행\s?권원|승계\s?(집행|결정)?(문)?|판결문|지급\s?(명령\s?(결정문)?|결정문?)|이행\s?권고|화해\s?권고"), # count=1이 의미있게 하기 위해 올바른 표현도 넣는다.
+        "집행권원 재도" : re.compile(r"(?<!\b[가-힣])재도(부여|건)?|\b재도건?|(?<!문)\s부여건?|수통\s?(부여)?|재교부건?|재발급건?"),
+        "강제집행" : re.compile(r"강제\s?집행|\s?타채|압추|(채권)?\s?압류\s?및?\s?추심\s?(명령|결정)?문?|(채권)?\s?추심\s?및?\s?압류\s?(명령|결정)?문?|채권\s?(추심|압류)\s?(결정)?(문)?|(?<!개시)\s결정문?"), # 결정이라는 말이 여러곳에서 나올 수 있다.ex개인회생 회생결정
+        "강제집행1" : re.compile(r"재산\s?명시|[가-힣\b]*(부?동산)?\s?(가?압류|경매)(?!물건)|[가-힣\b]*동산|[가-힣\b]*추심|[가-힣\b]*유체|[가-힣\b]*배당[가-힣]"), 
+        
+        "부채증명서" : re.compile(r"부채\s?(잔액)?증명\s?[서원]?(류|발급)?"),
+        "신용조회" : re.compile(r"신용\s?조회|신용\s?정보(?!( 활용| 이용|활용|이용|동의))"), # 신용조회가 있는 경우 기관이 앞에 나오건 뒤에 나오건 냅두면 되니 상관없음.
+        "신용조회1" : re.compile(r"KCB|NICE|나이스", re.I), # 기관명만 있는 경우 docu만 추가하면 됨. 순서대로 검색하니 여기 왔다는 건 신용조회라는 말이 없다는 뜻
+
+        # 등초본
+        "외국인증명" : re.compile(r"\(?\s?외국인\s?증명서?\s?\)?|\(?\s?외국인\s?등록\s?사실\s?증명서?\s?\)?|\(?\s?외국인\s?등록증?\s?\)?|\(?\s?외국인\s?\)?"),
+        "등초본" : re.compile(r"\(?\s?등본.{0,3}원?초본\s?\)?|\(?\s?원?초본.{0,3}등본\s?\)?|\(?\s?등\s?초본\s?\)?|\(?\s?주민\s?등록\s?등본\s?및?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?및?\s?등본\s?\)?|초[.,]등|등[.,]초"), # '등본 및 초본' 때문에 .{0,3}
+        # 등기부/s?등본은 조건문으로 처리하자.
+        "등본" : re.compile(r"\(?\s?법인\s?등기부?\s?(등본)?\s?\)?|\(?\s?(?<!(등기부|기부 ))등본\s?\)?|\(?\s?주민\s?등록\s?등본\s?\)?"), #제적_등본 허용. 배당표등본, 결정등본은 법원서류에서 걸러지니 pass
+        "초본" : re.compile(r"(?<![가-힣])원초본|(?<=원)원초본|(?<![가-힣])\(?\s?원\s?초본\s?\)?|(?<=[가-힣]{3})원초본|\(?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?\)?"), # 말소자_초본
+        "주민등록정보" : re.compile(r"행자부\s?(전송)?\s?(자료)?|주민\s?등록\s?정보|주소\s이력"),
+        # 키워드 추가(대체x)
+        "기타1" : re.compile(r"기타|집행문\s?부여의\s?소|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|분할|분납|상환|감면|(상속)?\s?한정\s?승인|상속\s?포기|지방세|세목별|과세") # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
+        #기타 제거 : 부채증명서, 신용조회, 주민등록정보
+        #p4_1=re.compile(r"(배당[가-힣]+") 차분히 만들자                            
+    }
 
 def file_listFnc(path) :
     p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif|tiff|m4a|wav)$', re.I)
@@ -162,7 +165,7 @@ def rmNeedlessSharp(nameextra:str) :
     #완전제거                                                      영어와 숫자가 연속
     p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
         |SCSB|ADMIN.*Conflict|\d(?!건|통|차|채|억|천|백|급|번|길)") #3개의 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
-    p_sign = re.compile(r"[^#㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^w#]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
+    p_sign = re.compile(r"[^#㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^\w#]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
     
     nameextra = p_rmSerialN.sub("", nameextra)
     nameextra = p_sign.sub(" ", nameextra)
@@ -265,11 +268,9 @@ def eventFnc(noKeyStem:str)->list:
         드물게 사건번호 예외일 수 있음. 역시 똑같이 직접 확인 필요
     """
     new_stem = noKeyStem
-    name, docu, event, extra, eSign = "", "", "", "", ""
-    jaedo = False
+    event, eSign, docu, nSharpe = "", "", "", ""
     
     # 컴파일 # 연도의 경우 2030이하면 괜찮음
-    p_jaedo = re.compile("재도\s?(부여)?|재발급|재교부|수통\s?(부여)")
     p_event1=re.compile(r"((?<=\D)|^)(19\d\d|20[012]\d)\s?(준?재?[가나느차카타즈본징하개회][가-힣]?)\s?([0-9]+)")
     p_event2=re.compile(r"((?<=\D)|^)([012]\d)\s?(준?재?[가나느차카타즈본징하개회][가-힣]?)\s?([0-9]+)")
     p_court = re.compile("[가-힣]*(법원|지원|지법|서울|대전|대구|부산|광주|수원|\
@@ -284,7 +285,7 @@ def eventFnc(noKeyStem:str)->list:
     # 사해행위는 판결, 품의서, 예고서 등 다방면에 걸쳐있어 키워드로 부적합
     dict = { #사건구분 검색어 / 삭제할 문서구분 키워드
         "집행권원" : [re.compile("가[합단소]|나|다|머|차"), comp["집행권원"]],
-        "강제집행" : [re.compile("카(?!경|기|확)|타|즈|본|징|가"), comp2["강제집행"]], #comp아니고 2다. #카경: 경정, 카기: 기타민사신청, 본(접수증)도 강제집행맞다.
+        "강제집행" : [re.compile("카(?!경|기|확)|타|즈|본|징|가"), comp["강제집행"]], #카경: 경정, 카기: 기타민사신청, 본(접수증)도 강제집행맞다.
         "개인회생" : [re.compile("라|개|회"), comp["개인회생"]],
         "파산" : [re.compile("하"), comp["파산"]], 
         "경정" : [re.compile("카경|카기전"), re.compile('집행권원|강제집행|개인회생|파산')],
@@ -293,13 +294,8 @@ def eventFnc(noKeyStem:str)->list:
 
     # 관할법원 제거
     new_stem = p_court.sub("", new_stem)
-
-    # 재도 여부 확인(집행권원일때만 하는 게 효율적이지만, name과 extra가 나눠지기 전에 해야 덜 복잡)
-    if p_jaedo.search(new_stem) :
-        jaedo = True
-        new_stem = p_jaedo.sub("", new_stem)
     
-    # 4.event, 2.name, 5.extra, 후속로직을 위한 eSing 할당
+    # event, name, extra, eSing 할당
     # 사건번호 없는 경우
     if (p_event1.search(new_stem)==None) and (p_event2.search(new_stem)==None) :
         return [0, noKeyStem]
@@ -309,53 +305,34 @@ def eventFnc(noKeyStem:str)->list:
         m = p_event1.search(new_stem)
         event = m[2] + m[3] + m[4]
         eSign = m[3]
-        name = new_stem[:m.start()]
-        extra = new_stem[m.end():]
+        nSharpe = new_stem[:m.start()] + "#" + new_stem[m.end():]
         
     else :
+        p_event2.search(new_stem)
         m = p_event2.search(new_stem)
         event = "20" + m[2] + m[3] + m[4]
         eSign = m[3]
-        name = new_stem[:m.start()]
-        extra = new_stem[m.end():]
+        nSharpe = new_stem[:m.start()] + "#" + new_stem[m.end():]
 
     # eSign에 따라 3.docu, name과 extra에서 각각 docu키워드 제거
-    if dict["집행권원"][0].search(eSign) : 
-        if jaedo : docu = "집행권원 재도"
-        else : docu = "집행권원"
-        #키워드 삭제
-        name = dict["집행권원"][1].sub("", name)
-        extra = dict["집행권원"][1].sub("", extra)
-    elif dict["강제집행"][0].search(eSign) : 
-        docu = "강제집행"
-        #지울키워드
-        name = dict["강제집행"][1].sub("", name)
-        extra = dict["강제집행"][1].sub("", extra)
-    elif dict["개인회생"][0].search(eSign) : 
-        docu = "개인회생"
-        #지울키워드
-        name = dict["개인회생"][1].sub("", name)
-        extra = dict["개인회생"][1].sub("", extra)
-    elif dict["파산"][0].search(eSign) : 
-        docu = "파산"
-        #지울키워드
-        name = dict["파산"][1].sub("", name)
-        extra = dict["파산"][1].sub("", extra)
-    elif dict["경정"][0].search(eSign) : #문서구분이 제대로 된 경우만 처리한다. 그렇지 않은 경우 hand로 보내서 문서구분 수작업 해준다.
-        docu = dict["경정"][1].search(name+extra)
-        if dict["경정"][1].search(name+extra) :
-            docu = dict["경정"][1].search(name+extra).group()
-            name = dict["경정"][1].sub("", name)
-            extra = dict["경정"][1].sub("", extra)
-        else : return [2, noKeyStem]
-    elif dict["기타"][0].search(eSign) :
-        docu = "기타" 
-        name = dict["기타"][1].sub("", name)
-        extra = dict["기타"][1].sub("", extra)
-    else :
-       return [2, noKeyStem]
+    for k, v in dict.items() :
+        if v[0].search(eSign) :
+            docu = k
+            nSharpe = v[1].sub("", nSharpe, count=1)
+            if (k == "집행권원") and comp["집행권원 재도"].search(nSharpe):
+                docu = docu + " 재도"
+                nSharpe = comp["집행권원 재도"].sub("", nSharpe)
+            elif k == "경정" : #몇개없으니 문서구분이 제대로 된 경우만 처리한다. 그렇지 않은 경우 hand로 보내서 문서구분 수작업 해준다.
+                if v[1].search(n) : #nSharpe는 위에서 지워버렸다.
+                    docu = v[1].search(n).group()
+                else : 
+                    return [2, noKeyStem]  # 경정사건인데 문서구분이 정확하지 않다.
 
-    return [1, [docu, event, name +"#"+ extra]]
+            nSharpe = re.sub("기타", "", nSharpe)
+            
+            return [1, [docu, event, nSharpe]] # 잘 마무리
+
+    return [2, noKeyStem] #반복문 끝나도 없음. 이거 탭 위치 for랑 같아야 한다!!!
 
 def setDocu(noKeyStem:str)->list :
     """[False:다큐없음, stem]|[True:다큐있음, [docu, name+"#"+extra]"""
@@ -368,63 +345,42 @@ def setDocu(noKeyStem:str)->list :
             isDocu = True
             s = v.search(n).start() # 이걸 기준으로 name과 extra만 저장하기 때문에 검색된 키워드는 첫번째것만 자연스레 제거
             e = v.search(n).end()
-            if k == "부채증명서" : #기타 제거
-                docu = k
-                name = re.sub("기타", "", n[ : s ]) 
-                extra = re.sub("기타", "", n[ e : ])
-            elif k == "기타" : 
-                docu = k
-                if re.search("기타", n) : #기타 제거
-                    name = n[ : re.search("기타", n).start()] 
-                    extra = n[re.search("기타", n).end() : ]
-                else :
-                    name = n[ : s ]
-                    extra = n[ s : ] #e가 아님에 유의!! 검색한 단어가 기타정보에 해당하므로
-            elif k == "개인정보" : #기타 제거
-                docu = k
-                name = re.sub("기타", "", n[ : s ])
-                extra = re.sub("기타", "", n[ s : ])
-            elif k == "신용조회" : #기타 제거
-                docu = k
-                name = re.sub("신용\s조회|기타", "", n[ : s ])
-                extra = re.sub("신용\s조회|기타", "", n[ s :  ])
-            elif k == "강제집행" :
-                docu = k
-                if re.search("강제\s집행", n) : #파일명에 '강제집행'이 명시되어 있을 때
-                    name = n[ : re.search("강제\s집행", n).start()]
-                    extra = n[re.search("강제\s집행", n).end() : ]
-                    name = re.sub("결정문?")
-                else :
-                    name = comp2["강제집행"].sub("", n[ : s ])
-                    extra = comp2["강제집행"].sub("", n[ s : ]) #e가 아님에 유의!! 검색한 단어가 기타정보에 해당하므로
-            elif k == "집행권원" :
+            # 문서구분 추가(ss)
+            if k == "개인정보1" or k == "양도통지서1" or k == "신용회복1" or k == "재산조사1" or k == "강제집행1" or k == "신용조회1" or k == "기타1" : 
+                docu = k[ :-1 ] # 1떼기
                 name = n[ : s ]
-                extra = n[ e : ]
+                extra = n[ s : ] 
+
+            elif k == "양도통지서 차수" : 
+                pass # '1차'와 같은 것만으로 문서를 특정할 순 없다. 재도는 가능하면 else에 해당
+            # 문서구분이 검색어를 대체
+            elif k == "등본" :
                 docu = k
-                if comp2["재도"].search(n):
-                    name = comp2["재도"].sub("", name)
-                    extra = comp2["재도"].sub("", extra)
-                    docu = k + " 재도"
-            elif k == "집행권원 재도" :
-                name = n[ : s ]
-                extra = n[ e : ]
-                docu = k
-            elif k == "양도통지서" :
                 name = n[ : s ] 
                 extra = n[ e : ]
-                docu = k
-                if comp2["차수"].search(n) :
-                    name = comp2["차수"].sub("", name)
-                    extra = comp2["차수"].sub("", extra)
-                    docu = k + " " + comp2["차수"].search(n).group()
-                if comp2["양통종적"].search(n) : # 종족조회 및 기타 제거 
-                    name = comp2["양통종적"].sub("", name)
-                    extra = "종적조회"+ " "+ comp2["양통종적"].sub("", extra)
+                if re.search("법인", n) :
+                    docu = "법인" + "등기"
             else :
                 docu = k
                 name = n[ : s ] 
                 extra = n[ e : ]
-            return [isDocu, [docu, name+"#"+extra]]
+                if k == "집행권원" : # 집행권원 + (재도)? // 재도만 있는 경우는 상위로직 그대로 적용
+                    if comp["집행권원 재도"].search(n):
+                        docu = k + " 재도"
+                        name = comp["집행권원 재도"].sub("", name)
+                        extra = comp["집행권원 재도"].sub("", extra)
+                elif k == "양도통지서" : # 차수가 있다면 docu로 살려주고, 종적조회는 extra로 넘겨서 살려준다.
+                    if comp["양도통지서 차수"].search(n) :
+                        docu = k + " " + comp["양도통지서 차수"].search(n).group()
+                        name = comp["양도통지서 차수"].sub("", name)
+                        extra = comp["양도통지서 차수"].sub("", extra)
+                    if comp["양도통지서1"].search(n) : # 종족조회 및 기타 제거 
+                        name = comp["양도통지서1"].sub("", name)
+                        extra = "종적조회"+ " "+ comp["양도통지서1"].sub("", extra)
+
+            name = re.sub('기타', "", name, count=1)
+            extra = re.sub('기타', "", extra, count=1)
+            return [isDocu, [docu, name+"#"+extra]] #첫번째로 검색된 곳에서 반복문 종료
     
     return [isDocu, noKeyStem] #반복문 끝났는데도 매칭되는게 없었다면
 
@@ -432,9 +388,10 @@ def setDepth(new_f:str)->set :
     "return3 \n 함수 실행 후 depth1이 비었거나, wrong~~거나 out인지 확인"
 
     p_out = re.compile('개인회생\(면책\)|파산\(면책\)|환매|매각|종결')
-    docu_folder_dict = {"원인서류": "1.원인서류", "양도통지서": "2.양도통지서", "집행권원": "3.집행권원", "강제집행": "4.강제집행", "등본": "5.등초본",
-              "초본": "5.등초본", "등초본":"5.등초본", "외국인증명": "5.등초본", "개인정보" : "5.등초본", "개인회생": "6.개인회생", "신용회복": "7.신용회복", 
-              "파산": "8.파산", "재산조사": "9.재산조사", "부채증명서" : "10.부채증명서", "신용조회" : "11.신용조회", "기타": "기타"}
+    docu_folder_dict = {"원인서류": "1.원인서류", "양도통지서": "2.양도통지서", "집행권원": "3.집행권원", "강제집행": "4.강제집행", 
+        "등본": "5.등초본", "법인등본" : "5.등초본", "초본": "5.등초본", "등초본":"5.등초본", "외국인증명": "5.등초본", "주민등록정보":"5.등초본", 
+        "개인회생": "6.개인회생", "신용회복": "7.신용회복", "파산": "8.파산", "재산조사": "9.재산조사", "부채증명서" : "10.부채증명서", 
+        "신용조회" : "11.신용조회", "개인정보":"12.개인정보", "기타": "기타"}
     depth1 = ""
     depth3 = new_f[:8] ### 3(key)
     
