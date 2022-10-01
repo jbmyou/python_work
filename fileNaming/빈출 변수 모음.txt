@@ -80,6 +80,9 @@ from datetime import datetime
 
 
 -----기본 작성--------------------------------------------------------------
+if (p_extension.search(f)==None) or (re.match("[~$]", f) != None) :
+
+
 path = r'C:\Users\jbmyo\Desktop\test'
 file_list = [f.name for f in os.scandir(path) if f.is_file()]
 
