@@ -26,11 +26,11 @@ def log_list_test(path) :
 
 
 #################################
-pathOfLogs = r"\\192.168.0.75\스캔파일\스캔파일log\success\2209_확인및수정완료"
-pathToWriteLog = r"\\192.168.0.75\스캔파일\스캔파일log\success"
+pathOfLogsToRead = r"\\192.168.0.75\스캔파일\스캔파일log\success\미확인"
+pathoFLogToWrite = r"\\192.168.0.75\스캔파일\스캔파일log\success"
 
-# pathOfLogs = "/volume1/스캔파일/스캔파일log/success"
-# pathToWriteLog = "/volume1/스캔파일/스캔파일log/success/"
+# pathOfLogsToRead = "/volume1/스캔파일/스캔파일log/success"
+# pathoFLogToWrite = "/volume1/스캔파일/스캔파일log/success/"
 
 #################################
 
@@ -43,7 +43,7 @@ if __name__ == "__main__" :
         print("'fix', 'search' 중에서 목적을 입력하세요")
         sys.exit()
 
-    df, log_list = log_list_test(pathOfLogs)
+    df, log_list = log_list_test(pathOfLogsToRead)
     total = len(df.index)
     result = []
 
@@ -72,13 +72,13 @@ if __name__ == "__main__" :
                 print(f, n, e.__class__, e, sep=" : ")
                 pass
 
-        v2.write_log_csv(result, pathToWriteLog)
+        v2.write_log_csv(result, pathoFLogToWrite)
 
     else :
         ########### logic ###############
         
         search_col = "dst_file"
-        search_str = "20429252_㈜주원_원인서류.pdf"
+        search_str = "20421982_양현주_등본_부.pdf"
 
         #################################
         a = df.where(df[search_col] == search_str).dropna()

@@ -2,14 +2,12 @@
 purpose를 설정하면 test 모드로 진입
 0.변수(path, dict_referFnc( ), file_list( ), total, loglist
 for문
-    1. 변수 : items, extra, depth
+    1. 변수 : items, nameextra, depth
     2. keyFnc( ) - rm_s( )
-    2-1. nameFnc-> name, extra, #docu에서 name과 중복될까 걱정하지 않아도 됨. 이후 매개변수는 계속 extra
-    2-2. DateFnc
-    3-1. setDocuByEvent( ) - > docu, event, extra
+    3-1. setDocuByEvent( ) - > docu, event, name#extra
     else 
-    3-2. setDocu( ) > docu, extra
-    4. name#extra( ) : dateFnc( ), rmNeedless( ), rm_s( )
+    3-2. setDocu( ) > docu, name#extra
+    4. name#extra( ) : dateFnc( ), rmNeedlessSharp( ), rm_s( ) . if len(name)<2
 ------------------
     5. set_depth( )
     6. re_name( )
@@ -95,7 +93,7 @@ path_df = r'./파일/채무자조회.pkl'
 def dict_referFnc(path_df):
     """dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명]"""
     df_c = pd.read_pickle(path_df)
-    return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태, x[1].성명], x[1].보증인성명), df_c.iterrows()))
+    return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태, x[1].성명]), df_c.iterrows()))
 dict_refer = dict_referFnc(path_df) ################## 전역변수로 둬야 함. 함수에서도 쓰고, main에서도 쓴다.
 
 # 사해행위는 판결, 품의서, 예고서 등 다방면에 걸쳐있어 키워드로 부적합
@@ -104,8 +102,7 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
         "개인정보1" : re.compile(r"신분증|(기초)?수급자?|차상위|(법인|사용)?\s?인감|기본\s?증명서?|(가족|혼인)\s?(관계|증명)|이혼|입양|친양자|졸업|병적"),
         "원인서류" : re.compile(r"원인\s?서류|(입회|가입|카드)\s?신청서|(신용)?\s?대출\s?(신청서)?|약정서|녹취록?|통화\s?(내용|내역)|(대출)?\s?원장|마이너스\s?대출,종[적족]\s?조회"),
         "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)"), # 세양통신 해결
-        "양도통지서1" : re.compile(r"종[적족]\s?조회"), #종적조회는 모두 양통만 있더라
-        "양도통지서 차수" : re.compile(r"(?<!\d)\d차"), 
+        "양도통지서1" : re.compile(r"종[적족]\s?(조회)?|이력"), #종적조회는 모두 양통만 있더라
         # 사건번호 내부는 이제 신경쓰지 않아도 된다.
         "파산" : re.compile(r"파산|면책|파산.*면책"), #파산에도 배당있음. 강제집행보다 먼저 나와야
         # 연도 다음에 나오는 개회가 아닌 경우, 전방탐색을 통해 '개인회생'의 '회생'이 걸리는 거 방지. count도 하자
@@ -163,21 +160,22 @@ def rm_s(stem:str) :
     stem = p_s.sub(" ", stem).strip()
     return stem
 
-def rmNeedless(extra:str) :
-    """name과 extra가 확정되면 그때 한 번 해준다. 공백으로 대체가 있으므로 rm_s()를 내포했다.
-    일련번호와 기호 제거"""
+def rmNeedlessSharp(nameextra:str) :
+    """무조건 # 을 넣어줘야 작동함 \n
+    일련번호와 기호 제거>name, extra"""
        
     #완전제거                                                      영어와 숫자가 연속
     p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
         |SCSB|ADMIN.*Conflict|\d(?!건|통|차|채|억|천|백|급|번|길)") #3개의 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
     p_sign = re.compile(r"[^#㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^\w#]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
     
-    extra = p_rmSerialN.sub("", extra)
-    extra = p_sign.sub(" ", extra)
+    nameextra = p_rmSerialN.sub("", nameextra)
+    nameextra = p_sign.sub(" ", nameextra)
 
-    extra = rm_s(extra)
-
-    return extra
+    #분리 후 rm_s
+    name = rm_s(nameextra.split("#")[0])
+    extra = rm_s(nameextra.split("#")[1])
+    return name, extra
 
 # rm_s 내부실행
 def keyFnc(stem:str) -> str :
@@ -195,34 +193,6 @@ def keyFnc(stem:str) -> str :
         new_stem = rm_s(new_stem) 
     
     return key, new_stem
-
-def nameFnc(stem : str, allNameSharp : str) :
-    """return : name, extra \n
-    name은 rm까지 다 해서 리턴. 바로 저장하면 됨."""
-    
-    debtorName = allNameSharp.split("#")[0]
-    
-    spanList = []
-    for ptrn in re.findall("[가-힣a-zA-Z㈜]+|\([가-힣]\)", allNameSharp) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
-        ptrn = re.sub("\(", "\\(", ptrn) #search에서 ()인식을 위해
-        ptrn = re.sub("\)", "\\)", ptrn)
-        p = re.search(ptrn, stem)
-        if p :
-            spanList.append(p.start())
-            spanList.append(p.end())
-            spanList.sort()
-    
-    name = stem[spanList[0]:spanList[-1]]
-    extra = stem[ : spanList[0]] + stem[spanList[-1] : ] # 괄호때문에 그냥 이렇게 함.
-
-    if not re.search("[가-힣a-zA-Z]{2}") : # 한글이나 영어가 2글자 이상이 되지 못한다면
-        
-        name = debtorName
-
-    name = rmNeedless(name)
-    name = rm_s(name)
-
-    return name, extra
 
 def dateFnc(subStem:str)->str :
     "인자:key제거후, sign 제거 전  /  return2(date, stem-date)"
@@ -290,7 +260,7 @@ def dateFnc(subStem:str)->str :
 
     return date, subStem
 
-# date, rmNeedless 내부 실행
+# date, rmNeedlessSharp 내부 실행
 def eventFnc(noKeyStem:str)->list:
     """
     키와 확장자 제거한 파일명을 받아 return [0|1|2, old|new stem] \n
@@ -300,7 +270,7 @@ def eventFnc(noKeyStem:str)->list:
         드물게 사건번호 예외일 수 있음. 역시 똑같이 직접 확인 필요
     """
     new_stem = noKeyStem
-    event, eSign, docu, extra = "", "", "", ""
+    event, eSign, docu, nSharpe = "", "", "", ""
     
     # 컴파일 # 연도의 경우 2030이하면 괜찮음
     p_event1=re.compile(r"((?<=\D)|^)(19\d\d|20[012]\d)\s?(준?재?[가나느차카타즈본징하개회라][가-힣]?)\s?([0-9]+)")
@@ -318,7 +288,7 @@ def eventFnc(noKeyStem:str)->list:
     dict = { #사건구분 검색어 / 삭제할 문서구분 키워드
         "집행권원" : [re.compile("가[합단소]|나|다|머|차"), comp["집행권원"]],
         "강제집행" : [re.compile("카(?!경|기|확)|타|즈|본|징|가"), comp["강제집행"]], #카경: 경정, 카기: 기타민사신청, 본(접수증)도 강제집행맞다.
-        "개인회생" : [re.compile("라|개|회"), comp["개인회생"]], # 라 : 민사항고사건
+        "개인회생" : [re.compile("개|회"), comp["개인회생"]], # 라 : 민사항고사건
         "파산" : [re.compile("하"), comp["파산"]], 
         "경정" : [re.compile("카경|카기전"), re.compile('집행권원|강제집행|개인회생|파산')],
         "항고" : [re.compile("라"), re.compile('집행권원|강제집행|개인회생|파산')],
@@ -339,32 +309,32 @@ def eventFnc(noKeyStem:str)->list:
         m = p_event1.search(new_stem)
         event = m[2] + m[3] + m[4]
         eSign = m[3]
-        extra = new_stem[:m.start()] + new_stem[m.end():]
+        nSharpe = new_stem[:m.start()] + "#" + new_stem[m.end():]
         
     else :
         p_event2.search(new_stem)
         m = p_event2.search(new_stem)
         event = "20" + m[2] + m[3] + m[4]
         eSign = m[3]
-        extra = new_stem[:m.start()] + new_stem[m.end():]
+        nSharpe = new_stem[:m.start()] + "#" + new_stem[m.end():]
 
     # eSign에 따라 3.docu, name과 extra에서 각각 docu키워드 제거
     for k, v in dict.items() :
         if v[0].search(eSign) :
             docu = k
-            extra = v[1].sub("", extra, count=1) # v[1] = comp["집행권원..."]
-            if (k == "집행권원") and comp["집행권원 재도"].search(extra): # 재도일때
+            nSharpe = v[1].sub("", nSharpe, count=1)
+            if (k == "집행권원") and comp["집행권원 재도"].search(nSharpe):
                 docu = docu + " 재도"
-                extra = comp["집행권원 재도"].sub("", extra)
+                nSharpe = comp["집행권원 재도"].sub("", nSharpe)
             elif k == "경정" or k == "항고" : #몇개없으니 문서구분이 제대로 된 경우만 처리한다. 그렇지 않은 경우 hand로 보내서 문서구분 수작업 해준다.
                 if v[1].search(n) : #nSharpe는 위에서 지워버렸다.
                     docu = v[1].search(n).group() + k
                 else : 
                     return [2, noKeyStem]  # 경정사건인데 문서구분이 정확하지 않다.
 
-            extra = re.sub("기타", "", extra)
+            nSharpe = re.sub("기타", "", nSharpe)
             
-            return [1, [docu, event, extra]] # 잘 마무리
+            return [1, [docu, event, nSharpe]] # 잘 마무리
 
     return [2, noKeyStem] #반복문 끝나도 없음. 이거 탭 위치 for랑 같아야 한다!!!
 
@@ -384,9 +354,6 @@ def setDocu(noKeyStem:str)->list :
                 docu = k[ :-1 ] # 1떼기
                 name = n[ : s ]
                 extra = n[ s : ] 
-
-            elif k == "양도통지서 차수" : 
-                pass # '1차'와 같은 것만으로 문서를 특정할 순 없다. 재도는 가능하면 else에 해당
             # 문서구분이 검색어를 대체
             elif k == "등본" :
                 docu = k
@@ -404,10 +371,11 @@ def setDocu(noKeyStem:str)->list :
                         name = comp["집행권원 재도"].sub("", name)
                         extra = comp["집행권원 재도"].sub("", extra)
                 elif k == "양도통지서" : # 차수가 있다면 docu로 살려주고, 종적조회는 extra로 넘겨서 살려준다.
-                    if comp["양도통지서 차수"].search(n) :
-                        docu = k + " " + comp["양도통지서 차수"].search(n).group()
-                        name = comp["양도통지서 차수"].sub("", name)
-                        extra = comp["양도통지서 차수"].sub("", extra)
+                    p_차수 = re.compile(r"(?<!\d)\d차")
+                    if p_차수.search(n) :
+                        docu = k + " " + p_차수.search(n).group()
+                        name = p_차수.sub("", name)
+                        extra = p_차수.sub("", extra)
                     if comp["양도통지서1"].search(n) : # 종족조회 및 기타 제거 
                         name = comp["양도통지서1"].sub("", name)
                         extra = "종적조회"+ " "+ comp["양도통지서1"].sub("", extra)
@@ -521,15 +489,15 @@ if __name__ == "__main__" :
     for f in tqdm(file_list, total=total):
         try : #기본적으로 dict_refer에서의 에러는 처리된 상태이다. 
             if purpose != "done" : 
-                f_name_items = {"key" :"", "name" :"", "docu" :"", "event" :"", "extra" :"", "date" :""}
-                extra = None
+                name_items = {"key" :"", "name" :"", "docu" :"", "event" :"", "extra" :"", "date" :""}
+                name_extra = None
                 depth1, depth2, depth3,  = "", "", ""
 
                 n = os.path.splitext(f)[0]
                 ext = os.path.splitext(f)[1]
 
-                f_name_items["key"], n = keyFnc(n) #### rm_s() 같이 실행, key 할당####################
-                if not f_name_items["key"] :
+                name_items["key"], n = keyFnc(n) #### rm_s() 같이 실행, key 할당####################
+                if not name_items["key"] :
                     if purpose == 'logTest' :
                         nobasic.append([f, "nokey"])
                         continue
@@ -538,22 +506,8 @@ if __name__ == "__main__" :
                         temp.append("nokey")
                         nobasic.append(temp)
                         continue
-                
-                try :
-                    allNameSharp = dict_refer[f_name_items["key"]][2] + "#" + dict_refer[f_name_items["key"]][3]
-                except :
-                    if purpose == 'logTest' :
-                        nobasic.append([f, "dict_refer 키에러 for name"])
-                    else :
-                        temp = re_name(join(path, f), join(path_nobasic, f))#----------t
-                        temp.append("dict_refer 키에러 for name")
-                        nobasic.append(temp)
 
-                f_name_items["name"], n = nameFnc(n, allNameSharp) #### name 할당 ####################
-
-                f_name_items["date"], n = dateFnc(n) ### date 할당
-
-                isEvent, docuEventExtra = eventFnc(n) ### docu, event
+                isEvent, docuEventNameextra = eventFnc(n) ### docu, event
                 if isEvent == 2 :
                     if purpose == 'logTest' :
                         nobasic.append([f, "경정사건인데 nodocu"])
@@ -566,15 +520,15 @@ if __name__ == "__main__" :
                     
                 
                 elif isEvent == 1 : # 정상
-                    f_name_items["docu"] = docuEventExtra[0] #사건번호>>docu 할당 #############
-                    f_name_items["event"] = docuEventExtra[1]
-                    extra = docuEventExtra[2]
+                    name_items["docu"] = docuEventNameextra[0] #사건번호>>docu 할당 #############
+                    name_items["event"] = docuEventNameextra[1]
+                    name_extra = docuEventNameextra[2]
 
                 else : # 사건번호 없음
                     isDocu, docuNameExtra = setDocu(n)
                     if isDocu :
-                        f_name_items["docu"] = docuNameExtra[0]#비사건번호>>docu 할당 #############
-                        extra = docuNameExtra[1]
+                        name_items["docu"] = docuNameExtra[0]#비사건번호>>docu 할당 #############
+                        name_extra = docuNameExtra[1]
                     else : # nodocu
                         if purpose == 'logTest' :
                             nobasic.append([f, "nodocu"])
@@ -585,11 +539,31 @@ if __name__ == "__main__" :
                             nobasic.append(temp)
                             continue
 
-                extra = rmNeedless(extra)
+                date, temp = dateFnc(name_extra) ### date, name, extra
+                name, extra = rmNeedlessSharp(temp) 
+                if len(name) < 2 : 
+                    try :
+                        name = dict_refer[name_items["key"]][2]
+                    except :
+                        if purpose == 'logTest' :
+                            nobasic.append([f, "dict_refer 키에러 for name"])
+                        else :
+                            temp = re_name(join(path, f), join(path_nobasic, f))#----------t
+                            temp.append("dict_refer 키에러 for name")
+                            nobasic.append(temp)
+                    
+                    for ptrn in re.findall("[가-힣a-zA-Z]+", name) : # 새로 가져온 name에만 적용
+                        extra = re.sub(ptrn+"의?", "", extra) #다행히 ')의'는 '~~(주)의'밖에 안 보이네. 혹시 하다가 예외 많으면 \b의\b를 따로 해주는 것으로
+                    
+                    name, extra = rmNeedlessSharp(name+"#"+extra) #list를 반환하기 때문에 
+                
+                name = rm_s(name)
                 extra = rm_s(extra)
-                f_name_items["extra"] = extra #### extra #################
 
-                new_f = "_".join(filter(lambda x :bool(x), f_name_items.values())) + ext
+                name_items["name"] = name #### name, extra, date 할당 ######################
+                name_items["extra"] = extra
+                name_items["date"] = date
+                new_f = "_".join(filter(lambda x :bool(x), name_items.values())) + ext
 
             else :  # purpose == done
                 new_f = f 
