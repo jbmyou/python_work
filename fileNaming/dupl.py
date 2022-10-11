@@ -6,7 +6,8 @@ import binascii # 내장모듈
 import pickle # 내장모듈
 from os.path import join
 from tqdm import tqdm
-import traceback
+#import traceback
+from upload_v2 import write_log_csv
 
 def fileNameScore(filename:str) -> int :
     """파일명에서 특정 항목이 있는지 추리는 함수
@@ -30,22 +31,18 @@ def fileNameScore(filename:str) -> int :
     # 문서구분
     p_docu = re.compile(r'원인|양도통지서|양통|종적|승계|집행|판결|명령|이행|화해|재도|재부여|압류|압추|추심|유체|동산|배당|타채|결정|(등|초)본|외국인|개회|신복|파산|내용|신용|등기|부채|재산|대장')
     
-    real_f = f
-    if p_key.match(f) : 
-        score += 100000 # 날짜같은것과 구분짓기 위해 match필수
-        real_f = p_key.sub("", real_f)
+    if p_key.match(f) : score += 100000 # 날짜같은것과 구분짓기 위해 match필수
     else :
-        if p_extraKey.search(f) :  
-            score += 10000 # 채무자키 없을 때만, 채무자키 있으면 쓸모없는 정보이므로 점수 x
-            real_f = p_extraKey.sub("", real_f)
-    if p_event1.search(f) or p_event2.search(f) : 
-        score += 1000
-        real_f = p_event1.sub("", real_f)
-        real_f = p_event2.sub("", real_f)
-    if p_docu.search(f) : 
-        score += 100
-        real_f = p_docu.sub("", real_f)
+        if p_extraKey.search(f) : score += 10000 # 채무자키 없을 때만, 채무자키 있으면 쓸모없는 정보이므로 점수 x
+    if p_event1.search(f) or p_event2.search(f) : score += 1000
+    if p_docu.search(f) : score += 100
 
+    real_f = f
+    real_f = p_key.sub("", real_f)
+    real_f = p_extraKey.sub("", real_f)
+    real_f = p_event1.sub("", real_f)
+    real_f = p_event2.sub("", real_f)
+    real_f = p_docu.sub("", real_f)
     score += len(os.path.splitext(real_f)[0]) # score에 선반영 된 것들 제외한 파일명 길이 점수
 
     return score
@@ -55,37 +52,42 @@ def crc32_checksum(filename):
     buf = (binascii.crc32(buf) & 0xFFFFFFFF)
     return "%08X" % buf
 
-def file_info(path:str,savePath = "./파일/중복조사"):
+def file_info(path:str,savePath = "/volume1/스캔파일/스캔파일log/_project/파일/중복조사"):
     """
     하위경로포함 모든 파일에 대해 size,cre32로 중복 검사 후 
     모든 파일 정보 및 중복파일 목록을 excel, pickle로 파일폴더에 저장
     path : 중복검사할 최상위 디렉토리
     savePath : 검사 결과 파일을 저장할 디렉토리
     """
+    savePath = savePath
     dict_sc = {}  #중복파일끼리 묶을 딕셔너리(size+cre)
-    # df = None
-    # data = []
+    df = None
+    data = []
     p_extension = re.compile('jpeg|jpg|bmp|gif|pdf|png|tif|tiff|m4a|wav|mp[34]|xps$', re.I)
+    df_matching = pd.read_excel('./파일/매각사 이름매칭.xlsx')
 
     for root, __dirs__, files in tqdm(os.walk(path)):
-        
         for f in files:
             if (p_extension.search(f)!=None) and (re.match("[~$]", f) == None) :
-
                 fullPath = join(root, f)
                 #key
                 size = str(os.path.getsize(fullPath))
                 #value
                 mtime = str(os.path.getmtime(fullPath))
                 crc32 = str(crc32_checksum(fullPath))
+                sell = "매각사" # 검색결과가 없을 수 있으니
+                for __index__, row in df_matching.iterrows():
+                    if re.search(str(row[0]), str(root)):  
+                        sell = row[1]
+                        break            
                 stem = os.path.splitext(f)[0]
                 ext = os.path.splitext(f)[1]
                 
                 score = fileNameScore(f) ##
                 sc = size + crc32
 
-                temp = {"sc":sc, "score" : score, "root" : root, "stem":stem, "ext":ext, "fullPath" : fullPath, "size":size, "crc32": crc32, "mtime":mtime}
-                # data.append(temp)
+                temp = {"sc":sc, "score" : score, "root" : root, "stem":stem, "ext":ext, "fullPath" : fullPath, "size":size, "crc32": crc32, "mtime":mtime, "sell":sell}
+                data.append(temp)
                 
                 # 고유한 size, crc를 키로 하는 2중 딕셔너리 만들기
                 if sc not in dict_sc:
@@ -98,7 +100,7 @@ def file_info(path:str,savePath = "./파일/중복조사"):
     # sc_dupl = df.duplicated(['size', 'crc32'], keep=False) # 중복파일은 모두 마크하기(series)
     # sc_dupl.name = "sc_dupl" # 칼럼이름
     # df = pd.concat([df, sc_dupl], axis=1) # 새로운 열로 결합하기
-    # df_sc_dupl = df[df["sc_dupl"]] # dupl인 것만 새로운 df에 담기 return용
+    #df_sc_dupl = df[df["sc_dupl"]] # dupl인 것만 새로운 df에 담기 return용
     
     #add_dir = path.split("\\")[-1]
     # if not os.path.exists(join(savePath,add_dir)):
@@ -116,75 +118,135 @@ def file_info(path:str,savePath = "./파일/중복조사"):
     with open(join(savePath,"sc별 파일정보.pkl"), "wb") as pkl :
         pickle.dump(dict_sc, pkl)
 
-    return dict_sc
+    return
 
-if __name__ == "__main__" :
-    #####################################################
-    path = r'D:\구 스캔파일' 
-    path_base = r'D:\\구 스캔파일_key'
-    path_dupl = r'D:\\구 스캔파일_dupl'
-    total = 2527559
-    #####################################################
-    savePath = r"./파일/중복조사"
-    dict = file_info(path)
+def sort_dupl(pathOfDict:str, nameOfDict:str) :
 
-    # with open("./파일/중복조사/sc별 파일정보.pkl", "rb") as pkl :
-    #     dict = pickle.load(pkl)
-    print(f"파일 그룹 개수(중복되지 않은 파일 개수) : {len(dict)}") # 파일 그룹 개수
-
-    noKeyList = []
-    keyCnt, extraKeyCnt, duplCnt = 0, 0, 0
-
-    print("파일이동을 시작합니다.")
-    for key, ListOfSubDict in tqdm(dict.items()) : # 파일 그룹 단위 반복
+    with open(join(pathOfDict, nameOfDict), "rb") as pkl :
+        dict = pickle.load(pkl)
+    
+    total = len(dict)
+    
+    for __key__, ListOfSubDict in tqdm(dict.items(), total=total) : # 파일 그룹 단위 반복
     #"score" : score, "root" : root, "stem":stem, "ext":ext, "fullPath" : fullPath, "size":size, "crc32": crc32, "mtime":mtime, "sell":sell
+        num = len(ListOfSubDict)
+        if num == 1 :
+            pass
+        else :
+            for i in range(num):
+                for j in range((i+1), num) :
+                    if ListOfSubDict[i]["score"] < ListOfSubDict[j]["score"] : # 바뀌는 경우
+                        ListOfSubDict[i], ListOfSubDict[j] = ListOfSubDict[j], ListOfSubDict[i] # 딕셔너리 내부에서도 작동함.
+
+    with open(join(pathOfDict,("정렬된 "+nameOfDict)), "wb") as pkl :
+        pickle.dump(dict, pkl)
+
+def readDictOnebyOne(pathOfDict:str, nameOfDict:str) :
+    with open(join(pathOfDict, nameOfDict), "rb") as pkl :
+        dict = pickle.load(pkl)
+    total = len(dict)
+    print(f"전체 그룹 수는 {total}")
+
+    for key, list in dict.items() :
+        print(key)
+        templist = []
+        for x in list : 
+            templist.append(x["score"])
+        print("sore  : ", *templist, sep="  ")
+        print("마지막 파일 pathOfDict", x["fullPath"])
+        print("더 읽을까 말까? y or n")
+        go = input()
+        if go == "y" :
+            pass
+        else :
+            break
+
+def changeDictForNas(pathOfDict, nameOfDict) :
+    with open(join(pathOfDict, nameOfDict), "rb") as pkl :
+        dict = pickle.load(pkl)
+    total = len(dict)
+
+    for __key__, list in tqdm(dict.items(), total=total) :
+        for x in list : 
+            x["root"] = re.sub(r"D:\\", "/volume1/스캔파일/", x["root"])
+            x["root"] = re.sub(r"\\", "/", x["root"])
+            x["fullPath"] = re.sub(r"D:\\", "/volume1/스캔파일/", x["fullPath"])
+            x["fullPath"] = re.sub(r"\\", "/", x["fullPath"])
+
+    with open(join(pathOfDict,("nas용 "+nameOfDict)), "wb") as pkl :
+        pickle.dump(dict, pkl)
+
+def moveDuplFile(pathOfDict, nameOfDict, basePathToMove) : 
+    with open(join(pathOfDict, nameOfDict), "rb") as pkl :
+        dict = pickle.load(pkl)
+    total = len(dict)
+    print(f"{total}개의 그룹에 대해 중복 파일 이동을 실시합니다.")
+    dupl_fail = []
+    duplCnt = 0
+    
+    for __key__, list in tqdm(dict.items(), total=total) :
+        num = len(list)
+        if num > 1 : # 중복파일
+            for i in range(1, num) :
+                try :
+                    src = list[i]["fullPath"]
+                    #dir = os.path.split(src)[0]
+                    file = os.path.split(src)[1]
+
+                    dst_dir = join(basePathToMove, file) # 대표파일이름으로 폴더 만들어 중복파일을 넣는다
+                    dst = join(dst_dir, file)
+
+                    if not os.path.exists(dst_dir) :
+                        os.makedirs(dst_dir)
+                    shutil.move(src, dst)   
+                    duplCnt += 1
+
+                except Exception as e :
+                    dupl_fail.append([src, dst, e.__class__, e])
+                    continue  # 코드 계속 진행
+
+    print(f"중복파일 이동 : {duplCnt}건,  이동실패 : {len(dupl_fail)}건")
+    write_log_csv(dupl_fail, pathOfDict)
+    return
+
+def moveKeyFile(pathOfDict, nameOfDict, basePathToMove, path_gu) :
+    with open(join(pathOfDict, nameOfDict), "rb") as pkl :
+        dict = pickle.load(pkl)
+    total = len(dict)
+    gu = len(path_gu) + 1
+    print(f"{total}개의 그룹에 대해 key가 있는 파일 이동을 실시합니다.")
+    noKeyList = []
+    move_fail = []
+    keyCnt, extraKeyCnt = 0, 0
+
+    for __key__, list in tqdm(dict.items(), total=total) :
         try :
-            num = len(ListOfSubDict)
-            if num == 1 :
-                pass
-            else :
-                for i in range(num):
-                    highscore = i
-                    for j in range((i+1), num) :
-                        if ListOfSubDict[i]["score"] < ListOfSubDict[j]["score"] : # 바뀌는 경우
-                            ListOfSubDict[i], ListOfSubDict[j] = ListOfSubDict[j], ListOfSubDict[i] # 딕셔너리 내부에서도 작동함.
-
-                # 점수가 가장 높지 않은 것(num > 2) 중복파일 폴더로 이동. 파일이름 같은 거 삭제.
-                for k in range(1, num) : # range(1,1) 이라도 오류는 안 남
-                    try : 
-                        src = ListOfSubDict[k]["fullPath"]
-                        dst_dir = join(path_dupl, ListOfSubDict[0]["stem"]) # 대표파일 폴더 아래에 중복파일을 넣기 때문에 [0][stem]
-                        dst = join(dst_dir, os.path.split(src)[1])
-
-                        if not os.path.exists(dst_dir) :
-                            os.makedirs(dst_dir)
-                        shutil.move(src, dst)   
-                        duplCnt += 1
-                    except Exception as e :
-                        print("===================================")
-                        print(e.__class__, e, sep=" : ")
-                        print(traceback.format_exc())
-                        continue  # 코드 계속 진행
-                    
-            # 1. 하나의 파일 그룹에 대한 정렬이 끝났고, 중복파일은 다 이동했다. 여기서부턴 대표파일(subDict[0])을 key 유무에 따라 분류
-            
-            # 1.1) 점수가 가장 높고, key 있는 파일 채무자키폴더로 이동
+            # 1) 점수가 가장 높고, key 있는 파일 채무자키폴더로 이동
             # root - path -1(디렉토리 구분자 제거) = subdir
-            if ListOfSubDict[0]["score"] >= 100000 :
-                src = ListOfSubDict[0]["fullPath"]
-                dst_dir = join(path_base, "key", ListOfSubDict[0]["root"][len(path)+1:])
-                dst = join(dst_dir, os.path.split(src)[1])
+            if list[0]["score"] >= 100000 :
+                src = list[0]["fullPath"]
+                #dir = os.path.split(src)[0]
+                file = os.path.split(src)[1]
+
+                dst_dir = join(basePathToMove, file) # 대표파일이름으로 폴더 만들어 중복파일을 넣는다
+                dst = join(dst_dir, file)
+
+                dst_dir = join(basePathToMove, "key", list[0]["root"][gu:])
+                dst = join(dst_dir, file)
 
                 if not os.path.exists(dst_dir) :
                     os.makedirs(dst_dir)
                 shutil.move(src, dst)
                 keyCnt += 1
 
-            # 1.2) 점수가 가장 높지만, extraKey 있는 파일 extraKey폴더로 이동
-            elif ListOfSubDict[0]["score"] >= 10000 :
-                src = ListOfSubDict[0]["fullPath"]
-                dst_dir = join(path_base, "extraKey", ListOfSubDict[0]["root"][len(path)+1:])
-                dst = join(dst_dir, os.path.split(src)[1])
+            # 2) 점수가 가장 높지만, extraKey 있는 파일 extraKey폴더로 이동
+            elif list[0]["score"] >= 10000 :
+                src = list[0]["fullPath"]
+                #dir = os.path.split(src)[0]
+                file = os.path.split(src)[1]
+
+                dst_dir = join(basePathToMove, "extraKey", list[0]["root"][gu:])
+                dst = join(dst_dir, file)
 
                 if not os.path.exists(dst_dir) :
                     os.makedirs(dst_dir)
@@ -195,25 +257,32 @@ if __name__ == "__main__" :
             # 를 df에 담아 for문 끝난 후 엑셀로 저장
             # fullPath 하이퍼 링크 걸어주고, 편하게 파일 보면서 newName 저장
             else :
-                noKeyList.append([ListOfSubDict[0]["root"], ListOfSubDict[0]["stem"], ListOfSubDict[0]["ext"], ListOfSubDict[0]["fullPath"]])
+                noKeyList.append([list[0]["root"], list[0]["stem"], list[0]["ext"], list[0]["fullPath"]])
         
         except Exception as e :
-            print("===================================")
-            print(e.__class__, e, sep=" : ")
-            print(traceback.format_exc())
+            move_fail.append([src, dst, e.__class__, e])
             continue  # 코드 계속 진행
+    
+    print(f"채무자키 : {keyCnt}건,  기타키 : {extraKeyCnt}건,  이동실패 : {len(move_fail)}건")
+    write_log_csv(move_fail, pathOfDict)
 
     # 제 자리에 두는 파일 목록 엑셀로 변환
-        df_noKey = pd.DataFrame(noKeyList, columns=["root", "stem", "ext", "fullPath"])
-    try : 
-        df_noKey.to_excel(join(savePath, "remain.xlsx"))
-    except : pass
-    df_noKey.to_pickle(join(savePath, "remain.pkl")) # 엑셀 행 많아서 오류 날 수 있으니 
+    df_noKey = pd.DataFrame(noKeyList, columns=["root", "stem", "ext", "fullPath"])
+    df_noKey.to_excel(join(pathOfDict, "remain.xlsx"))
+    return
 
-    actCnt = keyCnt + extraKeyCnt + len(noKeyList) + duplCnt
-    print(f"total : {total}개.  key : {keyCnt}, extraKey : {extraKeyCnt}, noKeyRemain : {len(noKeyList)}, dupl : {duplCnt}") 
-    print(f"누수 파일 {total - actCnt}개")    
+
+
+if __name__ == "__main__" :
+
+    #####################################################
+    pathOfDict = "/volume1/스캔파일/스캔파일log/_project/파일/중복조사"
+    nameOfDict = "nas용 정렬된 sc별 파일정보.pkl"
+    basePathToMoveDupl = '/volume1/삭제예정파일/중복_스캔파일'
+    basePathToMoveKey = '/volume1/스캔파일'
+    path_gu = '/volume1/스캔파일/구 스캔파일'
+    #####################################################
     
-    
+    moveDuplFile(pathOfDict, nameOfDict, basePathToMoveDupl)
 
-
+    # moveKeyFile(pathOfDict, nameOfDict, basePathToMoveKey, path_gu)

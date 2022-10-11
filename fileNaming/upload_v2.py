@@ -25,6 +25,8 @@ import re
 import traceback
 from os.path import join
 from datetime import datetime
+import binascii
+import pickle
 
 def getPath(purpose:str) :
     """
@@ -42,6 +44,7 @@ def getPath(purpose:str) :
     path_log_out = r'\\192.168.0.75\스캔파일\스캔파일log\out'
     path_log_fail = r'\\192.168.0.75\스캔파일\스캔파일log\fail'
     path_df = r'\\192.168.0.75\스캔파일\스캔파일log\_project\파일\채무자조회.pkl'
+    path_dupl = r'\\192.168.0.75\삭제예정파일\중복_서버'
     if purpose == "done" :
         path = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\검수완료' 
         path_nobasic = join(path, "파일명에러")
@@ -56,9 +59,9 @@ def getPath(purpose:str) :
         path_log_fail = r'D:\0.전산\1.진행중과업\파일서버개편\log\fail'
         ### dict_referFnc 안 읽어지면 절대경로 담은 변수 직접 넣으라고
     elif purpose == "logTest" : # 파일 이동이 일어나지 않는다.
-        path = r'\\192.168.0.75\스캔파일\스캔파일log\_project\파일\9월분리뉴얼\2차_1003' # 읽을 csv들 있는 경로
+        path = r'\\192.168.0.75\스캔파일\스캔파일log\nobasic\새 폴더' ######################### 읽을 csv들 있는 경로
         path_server = r'/volume1/솔림헬프'
-        path_log_success = r'\\192.168.0.75\스캔파일\스캔파일log\_project\파일\9월분리뉴얼\2차_1003'
+        path_log_success = r'D:\0.전산\1.진행중과업\파일서버개편\log\success'
     elif purpose == "nas" : pass
     
     # path = r'/volume1/스캔파일/새 스캔파일(업로드)' #############
@@ -70,6 +73,7 @@ def getPath(purpose:str) :
     # path_log_out = r'/volume1/스캔파일/스캔파일log/out'
     # path_log_fail = r'/volume1/스캔파일/스캔파일log/fail'
     # path_df = r'/volume1/스캔파일/스캔파일log/_project/파일/채무자조회.pkl'
+    # path_dupl = r'/volume1/삭제예정파일/중복_서버'
     # if purpose == "done" :
     #     path = r'/volume1/스캔파일/새 스캔파일(업로드)/검수완료' 
     #     path_nobasic = join(path, "파일명에러")
@@ -88,19 +92,54 @@ def getPath(purpose:str) :
     #     path_server = r'/volume1/솔림헬프'
     #     path_log_success = r'D:\0.전산\1.진행중과업\파일서버개편\log\success'
     # elif purpose == "nas" : pass
+    
+    return path, path_server, path_nobasic, path_out, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df, path_dupl
 
-    return path, path_server, path_nobasic, path_out, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df
-
-path_df = r'./파일/채무자조회.pkl' 
+path_df = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일\채무자조회.pkl' 
 def dict_referFnc(path_df):
     """dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]"""
     df_c = pd.read_pickle(path_df).fillna("")
     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태, x[1].성명, x[1].보증인성명]), df_c.iterrows()))
 dict_refer = dict_referFnc(path_df) ################## 전역변수로 둬야 함. 함수에서도 쓰고, main에서도 쓴다.
 
+def crc32_checksum(filename):
+    buf = open(filename,'rb').read()
+    buf = (binascii.crc32(buf) & 0xFFFFFFFF)
+    return "%08X" % buf
+
+path_kcs = r'\\192.168.0.75/스캔파일/스캔파일log/_project/파일/중복조사/kcs별 파일정보_솔림헬프.pkl'
+def read_cks(path_kcs) :
+    with open(path_kcs, "rb") as pkl :
+        return pickle.load(pkl)
+dict_kcs = read_cks(path_kcs)
+
+def isDuplFnc(root:str, f:str) :
+    isDupl = False
+    fullPath = join(root, f)
+    crc32 = str(crc32_checksum(fullPath))
+    size = str(os.path.getsize(fullPath))
+    kcs = f[:8] + crc32 + size 
+
+    stem = os.path.splitext(f)[0]
+    ext = os.path.splitext(f)[1]
+
+    temp = {"score" : 0, "root" : root, "stem":stem, "ext":ext, "fullPath" : fullPath}
+    #서버에 있음
+    if kcs in dict_kcs : isDupl = True
+    #서버에 없음, dict에 추가
+    else : dict_kcs[kcs] = temp
+
+    return isDupl, kcs
+
+def write_cks(path_kcs, dict_kcs) :
+    with open(path_kcs, "wb") as pkl :
+        pickle.dump(dict_kcs, pkl)
+
+
 # 사해행위는 판결, 품의서, 예고서 등 다방면에 걸쳐있어 키워드로 부적합
 comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. 단 가압류와 압류처럼 가?압류로 표현할 수 있는 것은 순서 상관이 없음
 #"1붙은 건 .*를 앞에 붙여서 아예 맨 앞으로 문서구분을 이동시켜도 괜찮겠다. 어차피 이름 중복되면 제거하니까."
+        "개인정보" : re.compile(r"개인정보(?!활용|이용| 활| 이)"),
         "개인정보1" : re.compile(r"신분증|(기초)?수급자?|차상위|(법인|사용)?\s?인감|기본\s?증명서?|(가족|혼인)\s?(관계|증명)|이혼|입양|친양자|졸업|병적"),
         "원인서류" : re.compile(r"(원인|대출)\s?서류|(입회|가입|카드)\s?신청서|(신용)?\s?대출[약신원승확상거][가-힣]*|약정서|녹취록?|통화\s?(내용|내역)|(대출)?\s?원장|마이너스\s?대출"),
         "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)"), # 세양통신 해결
@@ -112,7 +151,7 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
         "신용회복" : re.compile(r"(?<=[가-힣]{3})신복|[\s_]신복|신용\s?회복"), #이름에있는 신복,숫자뒤 신복은 제외. 이름다음에 띄어쓰기 없이 나온 신복은.. 
         "신용회복1" : re.compile(r"(개인)?채무\s?조정안?|.*원상\s?회복|신청인\s?현황"),
         "재산조사" : re.compile(r"재산\s?조사|재산\s?조회"), # 상세문서를 재산조사가 대체하는 게 아님에 유의
-        "재산조사1" : re.compile(r"(?<!법인)\s등기|(?<!법인)등기|가압류\s?물건지|.*대장|.*등록\s?원부|.*은행거래|.*입출금"), # 법인 적지 않은 3채무자 등기는 재산조사로 보내버리자. 올리지 않도록 홍보
+        "재산조사1" : re.compile(r"(?<!법인)\s등기|(?<!법인)등기|가압류\s?물건지|.*대장|.*등록\s?원부|.*은행거래|.*입출금"),
         
         "부채증명서" : re.compile(r"부채\s?(잔액)?증명\s?[서원]?(류|발급)?"),
         "신용조회" : re.compile(r"신용\s?조[회사]|신용\s?정보(?!( 활용| 이용|활용|이용|동의))"), # 신용조회가 있는 경우 기관이 앞에 나오건 뒤에 나오건 냅두면 되니 상관없음.
@@ -125,13 +164,15 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
         "초본" : re.compile(r"(?<![가-힣])원초본|(?<=원)원초본|(?<![가-힣])\(?\s?원\s?초본\s?\)?|(?<=[가-힣]{3})원초본|\(?\s?(?<!법원)초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?\)?"), # 말소자_초본
         "주민등록정보" : re.compile(r"행자부\s?(전송)?\s?(자료)?|주민\s?등록\s?정보|주소\s?이력|법원초본"),
         # 키워드 추가(대체x)
-        "기타1" : re.compile(r"기타|집행문\s?부여의\s?소|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|대위변제|분할|분납|상환|감면|(상속)?\s?한정\s?승인|상속\s?포기|지방세|세목별|과세|.*내용증명|출입국사실|.*답변서|.*진술서|.*보정(서|명령)|.*인포케어|보증면탈|자동차직권말소|완제|.*품의서"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
+        "기타" : re.compile(r"기타"),
+        "기타1" : re.compile(r"집행문\s?부여|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|대위변제|분할|분납|상환|감면|(상속)?\s?한정\s?승인|상속\s?포기|지방세|세목별|과세|.*내용증명|출입국사실|.*답변서|.*진술서|.*보정(서|명령)|.*인포케어|보증면탈|자동차직권말소|완제|.*품의서|금전\s?공탁|배분\s?[계산|기일|내역]|[가-힣\s]*(예고|답변|준비)|이의신청"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
         #기타 제거 : 부채증명서, 신용조회, 주민등록정보
         # 판결문과 결정문이 여러곳에서 나올 수 있어 뒤로 뺌. 결정과 판결은 더욱 애매해서 제외함
-        "집행권원" : re.compile(r"집행\s?권원|승계\s?(집행|결정)?(문)?|판결문|양수금\s?(판결)?문?|지급\s?(명령|결정문?)|이행\s?(권고|결정문?)|화해\s?(권고|결정문?)|(가단|가합|가소|차전)\s?(결정|판결)?문?|공정증서"), # count=1이 의미있게 하기 위해 올바른 표현도 넣는다.
-        "집행권원 재도" : re.compile(r"(?<!\b[가-힣])재도(부여|건)?|\b재도건?|(?<!문)\s부여건?|수통\s?(부여)?|재교부건?|재발급건?"),
+        "집행권원" : re.compile(r"집행\s?권원|집행문(?!부여|이의)|승계\s?(집행|결정)?(문)?|판결문|양수금\s?(판결)?문?|(가단|가합|가소|차전)\s?(결정|판결)?문?"), # count=1이 의미있게 하기 위해 올바른 표현도 넣는다.
+        "집행권원1" : re.compile(r"사해행위\s?(취소)?\s?(소송)?|공정증서|지급\s?(명령|결정문?)|이행\s?(권고|결정문?)|화해\s?(권고|결정문?)"),
+        "집행권원 재도" : re.compile(r"(?<!\b[가-힣])재도(부여|건)?|\b재도건?|(?<!문)\s부여건?|수통\s?(부여)?|재교부건?|재발급건?"),    # 사해행위는 집행권원이지만, 답변서, 예고, 준비서면등이 있어서 키워드로 등록하기가..카단이랑도 엮인경우동 있고..
         "강제집행" : re.compile(r"강제\s?집행|압추|(채권)?\s?압류\s?및?\s?추심\s?(명령|결정)?문?|(채권)?\s?추심\s?및?\s?압류\s?(명령|결정)?문?|채권\s?(추심|압류)\s?(결정)?문?|(카단|카명|카합|카담|타채|타경|타기)\s?(결정)?문?"), # 결정이라는 말이 여러곳에서 나올 수 있어 단독사용은 불가
-        "강제집행1" : re.compile(r"재산\s?명시|[가-힣\b]*(부?동산)?\s?(가?압류|경매)(?!물건)|[가-힣\b]*동산|[가-힣\b]*추심|[가-힣\b]*유체|[가-힣\b]*배당[가-힣]|.*진술\s?최고서?"),#일반진술서는 안올려도 되는 거. 올린다면 기타로
+        "강제집행1" : re.compile(r"재산\s?명시|[가-힣\b]*(부?동산)?\s?(가?압류|경매)(?!물건)|[가-힣\b]*동산|[가-힣\b]*추심|[가-힣\b]*유체|[가-힣\b]*배당[가-힣]|.*진술\s?최고서?|3자이의"),#3자이의는 '가단'이라도 관련사건이 강제집행임 #일반진술서는 안올려도 되는 거. 올린다면 기타로
         "등본" : re.compile(r"\(?\s?법인\s?등기부?\s?(등본)?\s?\)?|\(?\s?(?<!(등기부|기부 |배당표|당표 |.결정|결정 ))등본\s?\)?|\(?\s?주민\s?등록\s?등본\s?\)?") #법인등본, 제적등본 setDocu에서 따로 처리, 등본이 법원서류에서 자꾸 나오니 젤 아래로...
     }
 
@@ -167,7 +208,7 @@ def rmNeedless(extra:str) :
        
     #완전제거                                                      영어와 숫자가 연속
     p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
-        |SCSB|ADMIN.*Conflict|\d(?!건|통|차|채|억|천|백|급|번|길|명)") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
+        |SCSB|ADMIN.*Conflict|\d(?!건|통|차|채|자|억|천|백|급|번|길|명)") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
     p_sign = re.compile(r"[^#㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^\w]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
     
     extra = p_rmSerialN.sub("", extra)
@@ -217,46 +258,62 @@ def nameFnc(stem : str, debtorName : str, grtName : str) :
     name = ""
     extra = stem
     
-    debtor_spanList = []
-    grt_spanList = []
-
+    debtorList = []
+    grtList = []
+    debtor, grt = "", ""
+    
+    #index를 안 쓰면 바로 바로 지워주면 되네.
     for ptrn in re.findall("[가-힣a-zA-Z]+|\([가-힣]\)|㈜", debtorName) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
         if ptrn == "㈜" :
-            m = re.search("\(주\)", stem)
+            m = re.search("\(주\)|㈜", stem)
             if m :
-                debtor_spanList.append(m.start())
-                debtor_spanList.append(m.end()) 
-        ptrn = ptrnFnc(ptrn)
-        p = re.search(ptrn, stem)
-        if p :
-            debtor_spanList.append(p.start())
-            debtor_spanList.append(p.end())
-    debtor_spanList.sort()
+                debtorList.append(m.group())
+                extra = re.sub("망?\s?" + ptrnFnc(m.group()) + r"\s?(의(?=\s))?", " ", extra)
+        else : 
+            ptrn = ptrnFnc(ptrn)
+            p = re.search(ptrn, stem)
+            if p :
+                debtorList.append(p.group())
+                extra = re.sub("망?\s?" + ptrnFnc(p.group()) + r"\s?(의(?=\s))?", " ", extra) # 의를 지우되 보증인이 의로 시작하는 경우 있어 (?=\s)추가, 대신 앞뒤공백 다 제거할 수 있어서 " "로 대체
     
     if grtName != "" : 
         for ptrn in re.findall("[가-힣a-zA-Z]+|\([가-힣]\)|㈜", grtName) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
             if ptrn == "㈜" :
-                m = re.search("\(주\)", stem)
+                m = re.search("\(주\)|㈜", stem)
                 if m :
-                    grt_spanList.append(m.start())
-                    grt_spanList.append(m.end()) 
-            ptrn = ptrnFnc(ptrn)
-            p = re.search(ptrn, stem)
-            if p :
-                grt_spanList.append(p.start())
-                grt_spanList.append(p.end())
-        grt_spanList.sort()
+                    grtList.append(m.group())
+                    extra = re.sub("망?\s?" + ptrnFnc(m.group()) + r"\s?(의(?=\s))?", "", extra)
+            else :
+                ptrn = ptrnFnc(ptrn)
+                p = re.search(ptrn, stem)
+                if p :
+                    grtList.append(p.group())
+                    extra = re.sub("망?\s?" + ptrnFnc(p.group()) + r"\s?(의(?=\s))?", " ", extra)
     
-    if len(debtor_spanList) != 0 :
-        name = stem[debtor_spanList[0]:debtor_spanList[-1]]
-        extra = re.sub(r"망?\s?"+ptrnFnc(name)+r"\s?(의(?=\s))?", " ", stem) # 의를 지우되 보증인이 의로 시작하는 경우 있어 (?!\s)추가, 대신 앞뒤공백 다 제거할 수 있어서 " "로 대체
+    # name에 debtor 추가
+    if len(debtorList) == 1 :
+        name = debtorList[0]
+    elif len(debtorList) > 1 :
+        debtor = " ".join(debtorList)
+        # 괄호 앞 뒤로 공백 없애기
+        debtor = re.sub("\s\(", "(", debtor)
+        debtor = re.sub("\)\s", ")", debtor)
+        debtor = re.sub("\s?㈜\s?", "㈜", debtor)
+        name = debtor
 
-    if len(grt_spanList) != 0 :
-        grt_name = stem[grt_spanList[0]:grt_spanList[-1]] #stem은 변화 없으니 인덱스 유지된다.
-        name = name + " 보증인 " + grt_name
-        extra = re.sub(r"망?\s?"+ptrnFnc(grt_name)+r"\s?(의(?=\s))?", " ", extra)
+    # name에 grt 추가
+    if len(grtList) == 1 :
+        grt = grtList[0]
+        name = name + " 보증인 " + grt
         extra = re.sub("보증인", "", extra)
-        
+    elif len(grtList) > 1 :
+        grt = " ".join(grtList)
+        grt = re.sub("\s\(", "\(", grt)
+        grt = re.sub("\)\s", "\)", grt)
+        grt = re.sub("\s?㈜\s?", "㈜", grt)
+        name = name + " 보증인 " + grt
+        extra = re.sub("보증인", "", extra)
+    
     if not re.search("[가-힣a-zA-Z]{2}", name) : # 한글이나 영어가 2글자 이상이 되지 못한다면
         name = debtorName
 
@@ -268,17 +325,76 @@ def nameFnc(stem : str, debtorName : str, grtName : str) :
 
     return name, extra
 
+# def nameFnc(stem : str, debtorName : str, grtName : str) :
+#     """return : name, extra \n
+#     name은 rm까지 다 해서 리턴. 바로 저장하면 됨."""
+    
+#     name = ""
+#     extra = stem
+    
+#     debtor_spanList = []
+#     grt_spanList = []
+
+#     for ptrn in re.findall("[가-힣a-zA-Z]+|\([가-힣]\)|㈜", debtorName) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
+#         if ptrn == "㈜" :
+#             m = re.search("\(주\)", stem)
+#             if m :
+#                 debtor_spanList.append(m.start())
+#                 debtor_spanList.append(m.end()) 
+#         ptrn = ptrnFnc(ptrn)
+#         p = re.search(ptrn, stem)
+#         if p :
+#             debtor_spanList.append(p.start())
+#             debtor_spanList.append(p.end())
+#     debtor_spanList.sort()
+    
+#     if grtName != "" : 
+#         for ptrn in re.findall("[가-힣a-zA-Z]+|\([가-힣]\)|㈜", grtName) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
+#             if ptrn == "㈜" :
+#                 m = re.search("\(주\)", stem)
+#                 if m :
+#                     grt_spanList.append(m.start())
+#                     grt_spanList.append(m.end()) 
+#             ptrn = ptrnFnc(ptrn)
+#             p = re.search(ptrn, stem)
+#             if p :
+#                 grt_spanList.append(p.start())
+#                 grt_spanList.append(p.end())
+#         grt_spanList.sort()
+    
+#     if len(debtor_spanList) != 0 :
+#         name = stem[debtor_spanList[0]:debtor_spanList[-1]]
+#         extra = re.sub(r"망?\s?"+ptrnFnc(name)+r"\s?(의(?=\s))?", " ", stem) # 의를 지우되 보증인이 의로 시작하는 경우 있어 (?!\s)추가, 대신 앞뒤공백 다 제거할 수 있어서 " "로 대체
+
+#     if len(grt_spanList) != 0 :
+#         grt_name = stem[grt_spanList[0]:grt_spanList[-1]] #stem은 변화 없으니 인덱스 유지된다.
+#         name = name + " 보증인 " + grt_name
+#         extra = re.sub(r"망?\s?"+ptrnFnc(grt_name)+r"\s?(의(?=\s))?", " ", extra)
+#         extra = re.sub("보증인", "", extra)
+        
+#     if not re.search("[가-힣a-zA-Z]{2}", name) : # 한글이나 영어가 2글자 이상이 되지 못한다면
+#         name = debtorName
+
+#     if re.search("[()]", name) != None and re.search(".*[()]", name).group()[-1] == "(" : #닫는 괄호 추가해주기
+#         name = name + ")"
+
+#     name = rmNeedless(name)
+#     name = rm_s(name)
+
+#     return name, extra
+
 def dateFnc(subStem:str)->str :
     "인자:key제거후, sign 제거 전  /  return2(date, stem-date)"
     date = ""
     # 컴파일
     #중간기호 : [. / - 공백]  그룹이름 필요  #####연도는 바뀔때마다 최댓값 수정 필요#### 
     p_day4 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-2])[\.\/\-\s](?P<m>[1-9])[./\-\s](?P<d>[1-9])(?!\d)\s?\)?')
-    p_day5 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-2])[\.\/\-\s](?P<m>[1-9])[./\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?')
+    p_day5 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-2])[\.\/\-\s](?P<m>[1-9])[./\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?') 
+    p_day5d = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-2])[\.\/\-\s](?P<m>10|11|12)[./\-\s](?P<d>[1-9])(?!\d)\s?\)?')
     p_day6 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-2])[\.\/\-\s](?P<m>0[1-9]|1[0-2])[./\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?')
     #중간기호는 없고 괄호로 감싸진 경우
     p_day_4 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-2])(?P<m>[1-9])(?P<d>[1-9])(?!\d)\s?\)')
-    p_day_5 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-2])(?P<m>[1-9])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')
+    p_day_5 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-2])(?P<m>[1-9])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')#(22119)가 1월19일인지 11월9일인지 알수 없고, 어차피 먼저 나온 거에 걸리므로 5d는 필요가 없다.
     p_day_6 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-2])(?P<m>0[1-9]|1[0-2])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')
     #괄호,중간기호 없이 (그러니 보수적으로) 숫자만 6/8자리 있는 경우.생년월일/일련번호와 겹칠 수 있으니 2015년 이후만. 4자리는 날짜인지 불확실하니 제외.
     p_day_d = re.compile(r'(?<!\d)(20)?(?P<y>1[5-9]|2[0-2])(?P<m>0[1-9]|1[0-2])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)')
@@ -290,8 +406,12 @@ def dateFnc(subStem:str)->str :
         d = p_day4.search(subStem)
         date = d["y"] + "0" + d["m"] + "0" + d["d"]
         subStem = p_day4.sub("", subStem)
-    elif p_day5.search(subStem) :
+    elif p_day5.search(subStem) : #월이 한자리
         d = p_day5.search(subStem)
+        date = d["y"] + "0" + d["m"] + d["d"]
+        subStem = p_day5.sub("", subStem)
+    elif p_day5d.search(subStem) : #일이 한자리
+        d = p_day5d.search(subStem)
         date = d["y"] + d["m"] + "0" + d["d"]
         subStem = p_day5.sub("", subStem)
     elif p_day6.search(subStem) :
@@ -302,10 +422,10 @@ def dateFnc(subStem:str)->str :
         d = p_day_4.search(subStem)
         date = d["y"] + "0" + d["m"] + "0" + d["d"]
         subStem = p_day_4.sub("", subStem)
-    elif p_day_5.search(subStem) :
+    elif p_day_5.search(subStem) : #월이 한자리
         d = p_day_5.search(subStem)
-        date = d["y"] + d["m"] + "0" + d["d"]
-        subStem = p_day_5.sub("", subStem)
+        date = d["y"] + "0" + d["m"] + d["d"]
+        subStem = p_day5.sub("", subStem)
     elif p_day_6.search(subStem) :
         d = p_day_6.search(subStem)
         date = d["y"] + d["m"] + d["d"]
@@ -335,7 +455,7 @@ def dateFnc(subStem:str)->str :
     return date, subStem
 
 # date, rmNeedless 내부 실행
-def eventFnc(noKeyStem:str)->list:
+def eventFnc(noKeyStem:str, testMode :bool = False)->list:
     """
     키와 확장자 제거한 파일명을 받아 return [0|1|2, old|new stem] \n
     0 : 사건번호 없음 또는 기타에 해당, ["", "", extra] 반환 -> setDocu( ) 호출해 \n
@@ -347,7 +467,7 @@ def eventFnc(noKeyStem:str)->list:
     
     # 컴파일 # 연도의 경우 2030이하면 괜찮음
     p_event1=re.compile(r"((?<=\D)|^)(19\d\d|20[012]\d)\s?(준?재?[가나느차카타즈본징하개회라][가-힣]?)\s?([0-9]+)")
-    p_event2=re.compile(r"((?<=\D)|^)([012]\d)\s?(준?재?[가나느차카타즈본징하개회라][가-힣]?)\s?([0-9]+)")
+    p_event2=re.compile(r"((?<=\D)|^)([0129]\d)\s?(준?재?[가나느차카타즈본징하개회라][가-힣]?)\s?([0-9]+)")
     p_court = re.compile("[가-힣]*(법원|지원|지법|서울|대전|대구|부산|광주|수원|\
         |의정부|파주|포천|동두천|가평|연천|철원|인천|김포|강화|용인|오산|광명|\
         |안성|양평|이천|춘천|홍천|양구|삼척|동해|정선|평창|태백|횡성|인제|화천|\
@@ -363,17 +483,18 @@ def eventFnc(noKeyStem:str)->list:
         "강제집행" : [re.compile("카(?!경|기|확)|타|즈(?!기)|본|징|가"), comp["강제집행"]], #카경: 결정,판결경정, 카기, 즈기: 기타민사신청(심판경정), 본(접수증)은 강제집행맞다.
         "개인회생" : [re.compile("개|회"), comp["개인회생"]], # 라 : 민사항고사건
         "파산" : [re.compile("하"), comp["파산"]], 
-        "경정" : [re.compile("카경|카기전|즈기"), re.compile('집행권원|강제집행|개인회생|파산')],
+        "경정" : [re.compile("카경|카기전|즈기"), re.compile('집행권원|강제집행')],
         "항고" : [re.compile("라"), re.compile('집행권원|강제집행|개인회생|파산')],
-        "기타" : [re.compile("느|카(기(?!전)|담|확)"), re.compile("기타")] #느(단) : 한정상속, 상속포기, 기:의사표시공시송달, 담:담보취소, 확:소송비용확정
+        "기타" : [re.compile("느|카(기(?!전)|담|확|금)"), re.compile("기타")] #느(단) : 한정상속, 상속포기, 기:의사표시공시송달, 담:담보취소, 확:소송비용확정
         }
 
     # 관할법원 제거
     new_stem = p_court.sub("", new_stem)
-    
+    if testMode : print("관할법원 제거후 : ", new_stem)
     # event, name, extra, eSing 할당
     # 사건번호 없는 경우
     if (p_event1.search(new_stem)==None) and (p_event2.search(new_stem)==None) :
+        if testMode : print("사건번호 없음")
         return [0, ["", "", noKeyStem]]
     #사건번호 있는 경우
     elif p_event1.search(new_stem):
@@ -387,35 +508,58 @@ def eventFnc(noKeyStem:str)->list:
         event = "20" + m[2] + m[3] + m[4]
         eSign = m[3]
         extra = new_stem[:m.start()] + new_stem[m.end():]
-
+    if testMode : print(f"사건번호 있음. event = {event}, extra = {extra}")
     # eSign에 따라 3.docu, name과 extra에서 각각 docu키워드 제거
-    etc = comp["기타1"].search(new_stem)
-    # 1) 사건번호 있지만 기타에 해당하는 키워드가 있는 경우
-    if etc and etc.group() != "기타": # 실제 기타로 처리하는 키워드가 있는 경우
-        return [2, ["", event, extra]] # 1번으로 처리해도 되지만 여기가 복잡해지니 setdocu로 넘기자
-    # ('기타'라는 말을 제외하곤)기타에 해당하는 키워드가 없는 경우 >> 사건구분자 문서구분
-    else :
-        for k, v in dict.items() :
-            if v[0].search(eSign) :
+    for k, v in dict.items() :
+        if v[0].search(eSign) : # 개회, 파산은 무조건 개회, 파산
+            if (k == "개인회생" or k=="파산") : 
                 docu = k
                 extra = v[1].sub("", extra, count=1) # v[1] = comp["집행권원..."]
-                if (k == "집행권원") and comp["집행권원 재도"].search(extra): # 재도일때
-                    docu = docu + " 재도"
-                    extra = comp["집행권원 재도"].sub("", extra)
-                elif k == "경정" or k == "항고" : 
-                    if v[1].search(extra) : # 정식구분(집행권원...)에 해당하는 경우
-                        docu = v[1].search(extra).group()
-                        extra = v[1].sub("", extra)
-                        extra = re.sub(k, "", extra) + k # 있든 없든 붙여주기 위해서
-                    else : # setDocu로 해결
-                        extra = re.sub(k, "", extra) + k # 있든 없든 붙여주기 위해서
-                        return [2, ["", event, extra]]  # 경정/항고사건인데 문서구분이 정확하지 않다.
-
                 extra = re.sub("기타", "", extra)
-                
-                return [1, [docu, event, extra]] # 잘 마무리
+                if testMode :
+                    print(f"개인회생,파산에 걸림. docu = {docu}, extra={extra}")
+                return [1, [docu, event, extra]]
 
-        return [2, ["", event, extra]] #사건구분 포섭 실패. 이거 탭 위치 for랑 같아야 한다!!!
+            else :
+                if comp["기타1"].search(extra) : # 실제 기타로 처리하는 키워드가 있는 경우
+                    docu = "기타"
+                    extra = re.sub("기타", "", extra)
+                    if testMode : print(f"기타에걸림 [d,e,ex]리턴 {docu, event, extra}")
+                    return [1, [docu, event, extra]] # 1번으로 처리해도 되지만 여기가 복잡해지니 setdocu로 넘기자
+
+                # ('기타'라는 말을 제외하곤)기타에 해당하는 키워드가 없는 경우 >> 사건구분자 문서구분
+                else :
+                    if (k == "집행권원") : 
+                        if eSign == "가단" and re.search("3자이의", extra) : #3자이의는 유체동산 관련
+                            docu = "강제집행"
+                            extra = re.sub("강제집행", "", extra)
+                        elif comp["집행권원 재도"].search(extra): # 재도일때
+                            docu = k + " 재도"
+                            extra = comp["집행권원 재도"].sub("", extra)
+                        else :
+                            docu = k
+                            extra = v[1].sub("", extra, count=1) # v[1] = comp["집행권원..."]
+                        if testMode : print(f"집행권원에 걸림 [d,e,ex]리턴 {docu, event, extra}")
+                    elif k == "경정" or k == "항고" : 
+                        if v[1].search(extra) : # 정식구분(집행권원...)에 해당하는 경우
+                            docu = v[1].search(extra).group()
+                            extra = v[1].sub("", extra)
+                            extra = re.sub(k, "", extra) + k # 있든 없든 붙여주기 위해서
+                            if testMode : print(f"경정에 왔고, docukey있음. [d,e,ex]리턴 {docu, event, extra}")
+                        else : # setDocu로 해결
+                            extra = re.sub(k, "", extra) + k # 있든 없든 붙여주기 위해서
+                            if testMode : print(f"경정docukey는 없음 [d,e,ex]리턴 {docu, event, extra}")
+                            return [2, ["", event, extra]]  # 경정/항고사건인데 문서구분이 정확하지 않다.
+                    else :
+                        docu = k
+                        extra = v[1].sub("", extra, count=1) # v[1] = comp["집행권원..."]
+                        if testMode : print(f"else사실상 강제집행에 걸림 [d,e,ex]리턴 {docu, event, extra}")
+
+                    extra = re.sub("기타", "", extra)
+                    if testMode : print(f"extra에서 기타를 제거하고 1번을 리턴함 [d,e,ex]={docu, event, extra}")
+                    return [1, [docu, event, extra]] # 잘 마무리
+    if testMode : print(f"for문이 끝났지만 아무것도 걸리지않음. 이럴 수는 없는데 {docu, event, extra}")
+    return [2, ["", event, extra]] #사건구분 포섭 실패. 이거 탭 위치 for랑 같아야 한다!!!
 
 def setDocu(noKeyStem:str)->list :
     """[False:다큐없음, stem]|[True:다큐있음, [docu, name+"#"+extra]"""
@@ -427,7 +571,7 @@ def setDocu(noKeyStem:str)->list :
         if v.search(extra) :
             isDocu = True
             # 문서구분 추가(ss)
-            if k == "개인정보1" or k == "양도통지서1" or k == "신용회복1" or k == "재산조사1" or k == "강제집행1" or k == "신용조회1" or k == "기타1" : 
+            if k == "개인정보1" or k == "양도통지서1" or k == "신용회복1" or k == "재산조사1" or k == "강제집행1" or k == "신용조회1" or k == "기타1" or k=="집행권원1": 
                 docu = k[ :-1 ] # 1떼기
             # 문서구분이 검색어를 대체
             elif k == "등본" :
@@ -524,7 +668,7 @@ def write_log_csv(log:list, path : str) -> None:
     
         import csv
         
-        name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) +".csv" 
+        name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) + ".csv" 
                     
         with open (join(path, name), "a", newline="", encoding='utf-8-sig') as p :
             for row in log :
@@ -543,10 +687,12 @@ if __name__ == "__main__" :
         sys.exit()
     else :
         #get path
-        path, path_server, path_nobasic, path_out, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df = getPath(purpose)
+        path, path_server, path_nobasic, path_out, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df, path_dupl = getPath(purpose)
         print(f"purpose:{purpose}---\n {path}에서 실행합니다. \n {path_log_success}에서 로그를 확인하세요")
     ############################
-
+    
+    before_len_dict_cks = len(dict_kcs)
+    
     file_list, df = None, None
     success, nobasic , out , fail = [], [], [], []
     if purpose == "logTest" :
@@ -576,7 +722,7 @@ if __name__ == "__main__" :
                         temp.append("nokey")
                         nobasic.append(temp)
                         continue
-
+                
                 try :
                     debtorName = dict_refer[f_name_items["key"]][2] 
                     grtName = dict_refer[f_name_items["key"]][3]
@@ -651,16 +797,29 @@ if __name__ == "__main__" :
                 else :
                     if not os.path.exists(out_dir):
                         os.makedirs(out_dir)
-                    out.append(re_name(join(path, f), join(out_dir, new_f)))#----------t
+                    temp = re_name(join(path, f), join(out_dir, new_f))#----------t
+                    temp.append("out")
+                    out.append(temp)
 
             else :
                 dst_dir = os.path.join(path_server, depth1, depth2, depth3)
                 if purpose == 'logTest' :
                     success.append([new_f, dst_dir])
-                else :
-                    if not os.path.exists(dst_dir):
-                        os.makedirs(dst_dir)  
-                    success.append(re_name(join(path, f), join(dst_dir, new_f)))#----------t
+                else : # 업로드 하는 곳
+
+                    isDupl, kcs = isDuplFnc(path, f)  ############### 중복검사
+                    if isDupl : # 중복인 경우
+                        dst_dir = join(path_dupl, depth2, kcs)
+                        if not os.path.exists(dst_dir):
+                            os.makedirs(dst_dir) 
+                        temp = re_name(join(path, f), join(dst_dir, new_f))
+                        temp.append("dupl")
+                        out.append(temp)
+                    
+                    else : # 중복이 아닌 경우 (isDuplFnc에서 dict에 추가는 했다.)
+                        if not os.path.exists(dst_dir):
+                            os.makedirs(dst_dir)  
+                        success.append(re_name(join(path, f), join(dst_dir, new_f)))#----------t
 
         except Exception as e:
             print("===================================")
@@ -689,10 +848,22 @@ if __name__ == "__main__" :
             write_log_csv(fail, path_log_fail)
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
+            pass
+        
+        try :
+            # pkl 수정
+            after_len_dict_cks = len(dict_kcs)
+            write_cks(path_kcs, dict_kcs)
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
+            pass
 
         if total == len(success) + len(nobasic) + len(out) + len(fail) :
             print("처리된 파일에 누수 없음")
         else :
             print("처리된 파일에 누수 있음")
 
-        print(f'전체:{total}개, 서버:{len(success)}개, 파일명에러:{len(nobasic)}개, 관리제외:{len(out)}개, 예상치못한 예외:{len(fail)}개')
+        print(f'전체:{total}개, 서버:{len(success)}개, 파일명에러:{len(nobasic)}개, 관리제외 및 중복:{len(out)}개, 예상치못한 예외:{len(fail)}개')
+        print(f'dict_kcs 변화 : {after_len_dict_cks} - {before_len_dict_cks} = {after_len_dict_cks - before_len_dict_cks}')

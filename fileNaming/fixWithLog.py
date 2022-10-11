@@ -26,7 +26,7 @@ def log_list_test(path) :
 
 
 #################################
-pathOfLogsToRead = r"\\192.168.0.75\스캔파일\스캔파일log\success\미확인"
+pathOfLogsToRead = r"\\192.168.0.75\스캔파일\스캔파일log\success"
 pathoFLogToWrite = r"\\192.168.0.75\스캔파일\스캔파일log\success"
 
 # pathOfLogsToRead = "/volume1/스캔파일/스캔파일log/success"
@@ -45,6 +45,7 @@ if __name__ == "__main__" :
 
     df, log_list = log_list_test(pathOfLogsToRead)
     total = len(df.index)
+    print(f'total row = {total}')
     result = []
 
     if purpose == "fix" :
@@ -78,11 +79,11 @@ if __name__ == "__main__" :
         ########### logic ###############
         
         search_col = "dst_file"
-        search_str = "20421982_양현주_등본_부.pdf"
+        search_str = "20420471_김종순_강제집행_2022타채501474.pdf"
 
         #################################
         a = df.where(df[search_col] == search_str).dropna()
-        b = a.index[0]
+        b = a.index[0] # 인덱스에러나면 검색결과 없다는 거
         print(a)
         for l, i in log_list :
             if b < i :
