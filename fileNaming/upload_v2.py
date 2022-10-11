@@ -325,64 +325,6 @@ def nameFnc(stem : str, debtorName : str, grtName : str) :
 
     return name, extra
 
-# def nameFnc(stem : str, debtorName : str, grtName : str) :
-#     """return : name, extra \n
-#     name은 rm까지 다 해서 리턴. 바로 저장하면 됨."""
-    
-#     name = ""
-#     extra = stem
-    
-#     debtor_spanList = []
-#     grt_spanList = []
-
-#     for ptrn in re.findall("[가-힣a-zA-Z]+|\([가-힣]\)|㈜", debtorName) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
-#         if ptrn == "㈜" :
-#             m = re.search("\(주\)", stem)
-#             if m :
-#                 debtor_spanList.append(m.start())
-#                 debtor_spanList.append(m.end()) 
-#         ptrn = ptrnFnc(ptrn)
-#         p = re.search(ptrn, stem)
-#         if p :
-#             debtor_spanList.append(p.start())
-#             debtor_spanList.append(p.end())
-#     debtor_spanList.sort()
-    
-#     if grtName != "" : 
-#         for ptrn in re.findall("[가-힣a-zA-Z]+|\([가-힣]\)|㈜", grtName) : #(주)를 안 썼을 수도 있으니 따로 빼준다.
-#             if ptrn == "㈜" :
-#                 m = re.search("\(주\)", stem)
-#                 if m :
-#                     grt_spanList.append(m.start())
-#                     grt_spanList.append(m.end()) 
-#             ptrn = ptrnFnc(ptrn)
-#             p = re.search(ptrn, stem)
-#             if p :
-#                 grt_spanList.append(p.start())
-#                 grt_spanList.append(p.end())
-#         grt_spanList.sort()
-    
-#     if len(debtor_spanList) != 0 :
-#         name = stem[debtor_spanList[0]:debtor_spanList[-1]]
-#         extra = re.sub(r"망?\s?"+ptrnFnc(name)+r"\s?(의(?=\s))?", " ", stem) # 의를 지우되 보증인이 의로 시작하는 경우 있어 (?!\s)추가, 대신 앞뒤공백 다 제거할 수 있어서 " "로 대체
-
-#     if len(grt_spanList) != 0 :
-#         grt_name = stem[grt_spanList[0]:grt_spanList[-1]] #stem은 변화 없으니 인덱스 유지된다.
-#         name = name + " 보증인 " + grt_name
-#         extra = re.sub(r"망?\s?"+ptrnFnc(grt_name)+r"\s?(의(?=\s))?", " ", extra)
-#         extra = re.sub("보증인", "", extra)
-        
-#     if not re.search("[가-힣a-zA-Z]{2}", name) : # 한글이나 영어가 2글자 이상이 되지 못한다면
-#         name = debtorName
-
-#     if re.search("[()]", name) != None and re.search(".*[()]", name).group()[-1] == "(" : #닫는 괄호 추가해주기
-#         name = name + ")"
-
-#     name = rmNeedless(name)
-#     name = rm_s(name)
-
-#     return name, extra
-
 def dateFnc(subStem:str)->str :
     "인자:key제거후, sign 제거 전  /  return2(date, stem-date)"
     date = ""
