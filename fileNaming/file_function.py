@@ -458,13 +458,15 @@ def rmSubDirs(path: str):
             continue
 
 def write_log_csv(log:list, path : str) -> None:
-    """경로폴더 미리 만들어야. 2차원이 최적이고 그 이상은 셀안에 리스트로"""
+    "2차원이 최적이고 그 이상은 셀안에 리스트로"
+    if not os.path.exists(path):
+        os.makedirs(path)  
 
     if len(log) > 0 :
     
         import csv
         
-        name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) +".csv" 
+        name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) + ".csv" 
                     
         with open (join(path, name), "a", newline="", encoding='utf-8-sig') as p :
             for row in log :
