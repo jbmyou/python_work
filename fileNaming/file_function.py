@@ -76,6 +76,32 @@ def re_name(src: str, dst: str) -> list:
 
     return [os.path.split(src)[0],os.path.split(src)[1], new_name, dir]
 
+def re_name_upload(src: str, dst: str) -> list:
+    """
+    파일명 변경 후 os.rename대신 사용하는 함수(중복확인과 새넘버링)
+    폴더를 바꾸는 거 아니라면 파일명 다를때라는 조건문 다음에 호출
+    src : dir + file
+    dst : dir + new_name
+    return : [src dir, src filename, dst filename, dst dir]
+    """
+    dir = os.path.split(dst)[0]
+    f_name = os.path.split(dst)[1]
+    stem = os.path.splitext(f_name)[0]
+    ext = os.path.splitext(f_name)[1]
+
+    new_name = stem + ext
+    i = 1
+    while os.path.exists(dir+"/"+new_name):  # 작업디렉토리가 아니므로 풀경로
+        new_name = stem + "_"+"("+str(i)+")"+ext
+        i += 1
+
+    if not os.path.exists(dir):
+        os.makedirs(dir)  # 미리 만들어뒀으니 mkdir해도 됨
+    
+    shutil.move(src, join(dir, new_name))
+
+    return [os.path.split(src)[0],os.path.split(src)[1], new_name, dir]
+
 
 #########################################
 # 채무자조회.xlsx -> dict
@@ -467,6 +493,24 @@ def write_log_csv(log:list, path : str) -> None:
         import csv
         
         name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) + ".csv" 
+                    
+        with open (join(path, name), "a", newline="", encoding='utf-8-sig') as p :
+            for row in log :
+                wr = csv.writer(p)
+                wr.writerow(row)
+    else :
+        print(f'log 파일이 비어있습니다. path : {path}')
+
+def write_log_csv_upload(log:list, path : str, addInfo : str = "") -> None: #################################
+    "2차원이 최적이고 그 이상은 셀안에 리스트로"
+    if not os.path.exists(path):
+        os.makedirs(path)  
+
+    if len(log) > 0 :
+    
+        import csv
+        
+        name = str(datetime.today().strftime("%Y%m%d %H%M%S")) + "_" +str(len(log)) + "_" + addInfo +".csv" ################################
                     
         with open (join(path, name), "a", newline="", encoding='utf-8-sig') as p :
             for row in log :

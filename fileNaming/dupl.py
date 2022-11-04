@@ -270,9 +270,7 @@ def moveKeyFile(pathOfDict, nameOfDict, basePathToMove, path_gu) :
     df_noKey = pd.DataFrame(noKeyList, columns=["root", "stem", "ext", "fullPath"])
     df_noKey.to_excel(join(pathOfDict, "remain.xlsx"))
     return
-
-
-
+    
 if __name__ == "__main__" :
 
     #####################################################
@@ -283,6 +281,7 @@ if __name__ == "__main__" :
     path_gu = '/volume1/스캔파일/구 스캔파일'
     #####################################################
     
-    moveDuplFile(pathOfDict, nameOfDict, basePathToMoveDupl)
+    # moveDuplFile(pathOfDict, nameOfDict, basePathToMoveDupl)
 
     # moveKeyFile(pathOfDict, nameOfDict, basePathToMoveKey, path_gu)
+
