@@ -426,7 +426,7 @@ def eventFnc(noKeyStem:str, testMode :bool = False)->list:
         "개인회생" : [re.compile("개|회"), comp["개인회생"]], # 라 : 민사항고사건
         "파산" : [re.compile("하"), comp["파산"]], 
         "경정" : [re.compile("카경|카기전|즈기"), re.compile('집행권원|강제집행')],
-        "항고" : [re.compile("라"), re.compile('집행권원|강제집행|개인회생|파산')],
+        "항고" : [re.compile("라"), re.compile('집행권원|강제집행|개인회생|파산|기타')],
         "기타" : [re.compile("느|카(기(?!전)|담|확|금)"), re.compile("기타")] #느(단) : 한정상속, 상속포기, 기:의사표시공시송달, 담:담보취소, 확:소송비용확정
         }
 
@@ -639,7 +639,7 @@ def write_log_csv(log:list, path : str, addInfo : str = "") -> None: ###########
         print(f'log 파일이 비어있습니다. path : {path}')
 
 def no_upload(f) :
-    p = re.compile(r"개문비")
+    p = re.compile(r"개문")
     if p.search(f) : return True
     else : return False
 
