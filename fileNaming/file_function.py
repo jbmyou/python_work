@@ -8,6 +8,32 @@ from pathlib import Path
 import traceback
 from os.path import join
 from datetime import datetime
+from io import StringIO
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFParser
+
+
+#########################################
+# pdf파일 > str
+#########################################
+
+def read_pdf(file_name):
+    """애초에 pdf로 만들어져야 읽어지는듯. tif를 pdf로 바꾸니 안 읽어진다."""
+    output_string = StringIO()
+    with open(file_name, 'rb') as f:
+        parser = PDFParser(f)
+        doc = PDFDocument(parser)
+        rsrcmgr = PDFResourceManager()
+        device = TextConverter(rsrcmgr, output_string, laparams=LAParams())
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        for page in PDFPage.create_pages(doc):
+            interpreter.process_page(page)
+    return output_string.getvalue()
+
 
 #########################################
 # pdf류 아닌 파일 모두 이동시키기
