@@ -138,7 +138,7 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
 #"1붙은 건 .*를 앞에 붙여서 아예 맨 앞으로 문서구분을 이동시켜도 괜찮겠다. 어차피 이름 중복되면 제거하니까."
         "원인서류" : re.compile(r"(원인|대출)\s?서류|(입회|가입|카드)\s?신청서|(신용)?\s?대출[약신원승확상거][가-힣]*|약정서|(?=녹취)|통화\s?(내용|내역)|(대출)?\s?원장|마이너스\s?대출"),
         "개인정보" : re.compile(r"개인정보(?!활용|이용| 활| 이)"),
-        "개인정보1" : re.compile(r"신분증|주민등록증|(기초)?수급자?|차상위|(법인|사용)?\s?인감|기본\s?증명서?|(가족|혼인)\s?(관계|증명)|이혼|입양|친양자|졸업|병적"),
+        "개인정보1" : re.compile(r"신분증|운전면허|주민등록증|(기초)?수급자?|차상위|(법인|사용)?\s?인감|기본\s?증명서?|(가족|혼인)\s?(관계|증명)|이혼|입양|친양자|졸업|병적"),
         # 등초본
         "외국인증명" : re.compile(r"\(?\s?외국인\s?증명서?\s?\)?|\(?\s?외국인\s?등록\s?사실\s?증명서?\s?\)?|\(?\s?외국인\s?등록증?\s?\)?|\(?\s?외국인\s?\)?"),
         "등초본" : re.compile(r"\(?\s?등본.{0,3}원?초본\s?\)?|\(?\s?원?초본.{0,3}등본\s?\)?|\(?\s?등[\s.,]?초본?\s?\)?|\(?\s?초[\s.,]?등본?\s?\)?|\(?\s?주민\s?등록\s?등본\s?및?\s?초본\s?\)?|\(?\s?주민\s?등록\s?초본\s?및?\s?등본\s?\)?"), # '등본 및 초본' 때문에 .{0,3}
@@ -208,7 +208,7 @@ def rmNeedless(extra:str) :
        
     #완전제거                                                      영어와 숫자가 연속
     p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
-        |SCSB|ADMIN.*Conflict|\d(?!건|통|차|채|자|억|천|백|급|번|길|명)") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
+        |SCSB|ADMIN.*Conflict|\d(?!건|통|차|채|자|억|천|백|급|번|회|길|명)") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
     p_sign = re.compile(r"[^㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^\w]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
     
     extra = p_rmSerialN.sub("", extra)
@@ -638,10 +638,12 @@ def write_log_csv(log:list, path : str, addInfo : str = "") -> None: ###########
                 wr = csv.writer(p)
                 wr.writerow(row)
     else :
-        print(f'log 파일이 비어있습니다. path : {path}')
+        for name in globals() : 
+            if globals()[name] is log :
+                print(f'{name} 파일이 비어있습니다. path : {path}')
 
 def no_upload(f) :
-    p = re.compile(r"개문")
+    p = re.compile(r"개문|채무\s?이행\s?통지")
     if p.search(f) : return True
     else : return False
 
