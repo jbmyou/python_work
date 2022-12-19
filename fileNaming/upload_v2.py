@@ -640,7 +640,7 @@ def write_log_csv(log:list, path : str, addInfo : str = "") -> None: ###########
     else :
         for name in globals() : 
             if globals()[name] is log :
-                print(f'{name} 파일이 비어있습니다. path : {path}')
+                print(f'log 파일이 비어있습니다. path : {path}')
 
 def no_upload(f) :
     p = re.compile(r"개문|채무\s?이행\s?통지")
