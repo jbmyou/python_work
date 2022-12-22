@@ -96,14 +96,11 @@ def getPath(purpose:str) :
     
     return path, path_server, path_nobasic, path_out, path_noUp, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df, path_dupl
 
-# path_df = r'/volume1/스캔파일/스캔파일log/_project/파일/채무자조회.pkl' 
-# def dict_referFnc(path_df):
-#     """dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]"""
-#     df_c = pd.read_pickle(path_df).fillna("")
-#     return dict(map(lambda x : (str(x[1].채무자키),[x[1].매각사구분, x[1].채무상태, x[1].성명, x[1].보증인성명]), df_c.iterrows()))
-path_dict = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일\dict_refer.pkl' 
-with open(path_dict, 'rb') as pkl :
-    dict_refer = pickle.load(pkl)
+path_dict = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일' 
+# dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]
+with open(join(path_dict, "dict_refer.pkl"), 'rb') as pkl : dict_refer = pickle.load(pkl)
+# outList (활용) "key" in sr.values > out
+with open(join(path_dict, "outList.pkl"), 'rb') as pkl : outList = pickle.load(pkl)
 
 def crc32_checksum(filename):
     buf = open(filename,'rb').read()
@@ -566,7 +563,6 @@ def setDocu(noKeyStem:str)->list :
 def setDepth(new_f:str)->set :
     "return3 \n 함수 실행 후 depth1이 비었거나, wrong~~거나 out인지 확인"
 
-    p_out = re.compile('개인회생\(면책\)|파산\(면책\)|환매|매각|종결')
     docu_folder_dict = {"원인서류": "1.원인서류", "양도통지서": "2.양도통지서", "집행권원": "3.집행권원", "강제집행": "4.강제집행", 
         "등본": "5.등초본", "법인등기" : "5.등초본", "초본": "5.등초본", "등초본":"5.등초본", "외국인증명": "5.등초본", "주민등록정보":"5.등초본", 
         "개인회생": "6.개인회생", "신용회복": "7.신용회복", "파산": "8.파산", "재산조사": "9.재산조사", "부채증명서" : "10.부채증명서", 
@@ -589,7 +585,7 @@ def setDepth(new_f:str)->set :
         return "wrongdocu", "", ""
 
     # 관리제외 검사
-    if p_out.match(dict_refer[depth3][1]):
+    if depth3 in outList.values :
         return "out", depth2, depth3
     else :
         return depth1, depth2, depth3

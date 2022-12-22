@@ -16,6 +16,15 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
+#########################################
+# 파일 목록 불러오기
+#########################################
+
+def read_filelist(path) :
+    # 업데이트시 dupl.py의 fileInfo()도 업데이트 해야
+    p_extension = re.compile('(jpeg|jpg|bmp|gif|pdf|png|tif|tiff|m4a|wav|mp[34])$', re.I) 
+    return [f.name for f in os.scandir(path) if f.is_file() and (p_extension.search(f.name))]
+
 
 #########################################
 # pdf파일 > str
