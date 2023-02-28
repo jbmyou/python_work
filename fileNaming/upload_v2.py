@@ -5,10 +5,10 @@ for문
     1. 변수 : items, extra, depth
     2. keyFnc( ) - rm_s( )
     2-1. nameFnc-> name, extra, #docu에서 name과 중복될까 걱정하지 않아도 됨. 이후 매개변수는 계속 extra
-    2-2. DateFnc
     3-1. setDocuByEvent( ) - > docu, event, extra
     else 
     3-2. setDocu( ) > docu, extra
+    2-2. DateFnc 사건번호를 날짜로 취하는 경우 있어서 뒤로 옮김
     4. name#extra( ) : dateFnc( ), rmNeedless( ), rm_s( )
 ------------------
     5. set_depth( )
@@ -96,6 +96,10 @@ def getPath(purpose:str) :
     
     return path, path_server, path_nobasic, path_out, path_noUp, path_log_out, path_log_success, path_log_nobasic, path_log_out, path_log_fail, path_df, path_dupl
 
+y_10 = str(datetime.today().year)[2]
+y_10_before = str(int(str(datetime.today().year)[2])-1)
+y_1 = str(datetime.today().year)[3]
+
 path_dict = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일' 
 # dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]
 with open(join(path_dict, "dict_refer.pkl"), 'rb') as pkl : dict_refer = pickle.load(pkl)
@@ -147,7 +151,7 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
         "기타1" : re.compile(r"집행문\s?부여|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|대위변제|분할|분납|상환|감면|(상속)?\s?한정\s?승인|\
             |상속\s?포기|지방세|세목별|과세|.*내용증명|출입국사실|.*답변서|.*진술서|.*보정(서|명령)|.*인포케어|보증면탈|자동차직권말소|완제|.*품의서|금전\s?공탁|\
             |배분\s?[계산|기일|내역]|[가-힣\s]*(예고|답변|준비)|이의신청|의사표시(?!용)|소송고지|위임장|개별공시|주택가격|채무종결|개인\s?정보\s?(활용|이용|동의)|\
-            |소장|진단서|사용\s?증명원"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
+            |소장|진단서|사용\s?증명원|해제\s?통지서"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
         #기타 제거 : 부채증명서, 신용조회, 주민등록정보
         "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)|(?<=환매)통지서?|(?<=신탁)통지서?"), # 세양통신 해결
         "양도통지서1" : re.compile(r"종[적족]\s?(조회)?|(?<!주소|소\s)이력"), #종적조회는 모두 양통만 있더라
@@ -324,20 +328,22 @@ def nameFnc(stem : str, debtorName : str, grtName : str) :
     return name, extra
 
 def dateFnc(subStem:str)->str :
-    "인자:key제거후, sign 제거 전  /  return2(date, stem-date)"
+    "2000년 이후/기호없으면 2015년 이후 / 인자:key제거후, sign 제거 전  /  return2(date, stem-date)"
     date = ""
     # 컴파일
     #중간기호 : [. / - 공백]  그룹이름 필요  #####연도는 바뀔때마다 최댓값 수정 필요#### 
-    p_day4 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-3])[\.\/\-\s](?P<m>[1-9])[\.\/\-\s](?P<d>[1-9])(?!\d)\s?\)?')
-    p_day5 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-3])[\.\/\-\s](?P<m>[1-9])[\.\/\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?') 
-    p_day5d = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-3])[\.\/\-\s](?P<m>10|11|12)[\.\/\-\s](?P<d>[1-9])(?!\d)\s?\)?')
-    p_day6 = re.compile(r'\(?\s?(?<!\d)(20)?(?P<y>[01]\d|2[0-3])[\.\/\-\s](?P<m>0[1-9]|1[0-2])[\.\/\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?')
+    year_com = '(?P<y>[0-'+ y_10_before +']\d|'+y_10+'[0-'+y_1+'])'
+    p_day4 = re.compile('\(?\s?(?<!\d)(20)?'+year_com+'[\.\/\-\s](?P<m>[1-9])[\.\/\-\s](?P<d>[1-9])(?!\d)\s?\)?')
+    p_day5 = re.compile('\(?\s?(?<!\d)(20)?'+year_com+'[\.\/\-\s](?P<m>[1-9])[\.\/\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?') 
+    p_day5d = re.compile('\(?\s?(?<!\d)(20)?'+year_com+'[\.\/\-\s](?P<m>10|11|12)[\.\/\-\s](?P<d>[1-9])(?!\d)\s?\)?')
+    p_day6 = re.compile('\(?\s?(?<!\d)(20)?'+year_com+'[\.\/\-\s](?P<m>0[1-9]|1[0-2])[\.\/\-\s](?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)?')
     #중간기호는 없고 괄호로 감싸진 경우
-    p_day_4 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-3])(?P<m>[1-9])(?P<d>[1-9])(?!\d)\s?\)')
-    p_day_5 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-3])(?P<m>[1-9])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')#(22119)가 1월19일인지 11월9일인지 알수 없고, 어차피 먼저 나온 거에 걸리므로 5d는 필요가 없다.
-    p_day_6 = re.compile(r'\(\s?(20)?(?P<y>[01]\d|2[0-3])(?P<m>0[1-9]|1[0-2])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')
+    p_day_4 = re.compile('\(\s?(20)?'+year_com+'(?P<m>[1-9])(?P<d>[1-9])(?!\d)\s?\)')
+    p_day_5 = re.compile('\(\s?(20)?'+year_com+'(?P<m>[1-9])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')#(22119)가 1월19일인지 11월9일인지 알수 없고, 어차피 먼저 나온 거에 걸리므로 5d는 필요가 없다.
+    p_day_6 = re.compile('\(\s?(20)?'+year_com+'(?P<m>0[1-9]|1[0-2])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)\s?\)')
     #괄호,중간기호 없이 (그러니 보수적으로) 숫자만 6/8자리 있는 경우.생년월일/일련번호와 겹칠 수 있으니 2015년 이후만. 4자리는 날짜인지 불확실하니 제외.
-    p_day_d = re.compile(r'(?<!\d)(20)?(?P<y>1[5-9]|2[0-3])(?P<m>0[1-9]|1[0-2])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)')
+    p_day_d = re.compile('(?<!\d)(20)?(?P<y>1[5-9]|'+y_10+'[0-'+y_1+'])(?P<m>0[1-9]|1[0-2])(?P<d>[0-2][1-9]|[1-3]0|31)(?!\d)')
+    # 글자 '년','월','일'이 있는 경우
     p_y = re.compile(r'(\d\d|\d\d\d\d)년')
     p_m = re.compile(r'(\d{1,2})월')
     p_d = re.compile(r'(\d{1,2})일')
@@ -379,7 +385,8 @@ def dateFnc(subStem:str)->str :
         pm = p_m.search(subStem)
         pd = p_d.search(subStem)
         if py : 
-            date = py[1]
+            if len(py[1]) == 2 : date = py[1]
+            else : date = py[1][2:]
             subStem = p_y.sub("", subStem)
         if pm :
             if len(pm[1]) == 1 : date = date + "0" + pm[1]
@@ -401,15 +408,19 @@ def eventFnc(noKeyStem:str, testMode :bool = False)->list:
     0 : 사건번호 없음 또는 기타에 해당, ["", "", extra] 반환 -> setDocu( ) 호출해 \n
     1 : 사건번호 있고, [docu, event, extra]을 두번째 요소로 반환 \n
     2 : 경정사건번호인데 정확한 문서구분없음 ["", event, extra] 반환 -> setDocu() \n
+    사건번호 2개일 때 : 사건번호 두개가 모두 집행권원, 강제집행일때 하나는 지워짐 \n (line482 extra = v[1].sub("", extra, count=1)) \n 지워지는게 맞음
     """
     new_stem = noKeyStem
     event, eSign, docu, extra = "", "", "", ""
     
-    # 컴파일 # 연도의 경우 2030이하면 괜찮음
-    p_event1=re.compile(r"((?<=\D)|^)(19\d\d|20[012]\d)\s?(준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\s?([0-9]+)")
-    p_event2=re.compile(r"((?<=\D)|^)([01289]\d)\s?(준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\s?([0-9]+)")
-    p_event3=re.compile(r"((?<=\D)|^)(19\d\d|20[012]\d)(준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\b") #반드시 띄어쓰기를 하거나 끝이나야.(& 1보다 먼저 if문에서 나오면 안됨.)
-    p_event4=re.compile(r"((?<=\D)|^)([01289]\d)(준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\b") #반드시 띄어쓰기를 하거나 끝이나야.(& 1보다 먼저 if문에서 나오면 안됨.)
+    # 컴파일
+    year_com = "([0-"+ y_10_before +"]\d|"+y_10+"[0-"+y_1+"])"
+    # y-es-sn
+    p_event1=re.compile("((?<=\D)|^)(?P<y>19\d\d|20"+year_com+")\s?(?P<es>준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\s?(?P<sn>[0-9]+)")
+    p_event2=re.compile("((?<=\D)|^)(?P<y>[7-9][0-9]|"+year_com+")\s?(?P<es>준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\s?(?P<sn>[0-9]+)")
+    # y-es
+    p_event3=re.compile("((?<=\D)|^)(?P<y>19\d\d|20"+year_com+")\s?(?P<es>준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\b") #반드시 띄어쓰기를 하거나 끝이나야.(& 1보다 먼저 if문에서 나오면 안됨.)
+    p_event4=re.compile("((?<=\D)|^)(?P<y>[7-9][0-9]|"+year_com+")\s?(?P<es>준?재?[가간나느다머차카타즈본징하개회라정][가-힣]{0,2})\b") #반드시 띄어쓰기를 하거나 끝이나야.(& 1보다 먼저 if문에서 나오면 안됨.)
     p_court = re.compile("[가-힣]*(법원|지원|지법|서울|대전|대구|부산|광주|수원|\
         |의정부|파주|포천|동두천|가평|연천|철원|인천|김포|강화|용인|오산|광명|\
         |안성|양평|이천|춘천|홍천|양구|삼척|동해|정선|평창|태백|횡성|인제|화천|\
@@ -436,40 +447,45 @@ def eventFnc(noKeyStem:str, testMode :bool = False)->list:
     
     # event, name, extra, eSing 할당
     #사건번호 있는 경우
+    whichCase = ""
     if p_event1.search(new_stem):
+        whichCase = "1"
         m = p_event1.search(new_stem)
-        event = m[2] + m[3] + m[4]
-        eSign = m[3]
+        event = m["y"] + m["es"] + m["sn"]
+        eSign = m["es"]
         extra = new_stem[:m.start()] + new_stem[m.end():]
     elif p_event2.search(new_stem) :
+        whichCase = "2"
         m = p_event2.search(new_stem)
-        if int(m[2])  < 60 :
-            event = "20" + m[2] + m[3] + m[4]
+        if int(m["y"])  <= int(y_10 + y_1):
+            event = "20" + m["y"] + m["es"] + m["sn"]
         else :
-            event = m[2] + m[3] + m[4]
-        eSign = m[3]
+            event = m["y"] + m["es"] + m["sn"] # 1900년대는 사건번호에 19안 붙음
+        eSign = m["es"]
         extra = new_stem[:m.start()] + new_stem[m.end():]
     elif p_event3.search(new_stem) :
+        whichCase = "3"
         m = p_event3.search(new_stem)
-        event = m[2] + m[3]
-        eSign = m[3]
+        event = m["y"] + m["es"]
+        eSign = m["es"]
         extra = new_stem[:m.start()] + new_stem[m.end():]
     elif p_event4.search(new_stem) :
+        whichCase = "4"
         m = p_event4.search(new_stem)
-        if int(m[2]) < 60 :
-            event = "20" + m[2] + m[3]
+        if int(m["y"])  <= int(y_10 + y_1):
+            event = "20" + m["y"] + m["es"]
         else :
-            event = m[2] + m[3]
-        eSign = m[3]
+            event = m["y"] + m["es"]
+        eSign = m["es"]
         extra = new_stem[:m.start()] + new_stem[m.end():]
     else :
         if testMode : print("사건번호 없음")
         return [0, ["", "", noKeyStem]]
 
-    if testMode : print(f"사건번호 있음. event = {event}, extra = {extra}")
+    if testMode : print(f"사건번호 있음. event = {event}, extra = {extra}, whichCase = {whichCase}")
 
     # eSign에 따라 3.docu, name과 extra에서 각각 docu키워드 제거
-    for k, v in dict.items() :
+    for k, v in dict.items() : # k = 문서종류, v[0] = 사건구분자 컴파일, v[1] = (집행권원, 강제집행)키워드, 문서종류
         if v[0].search(eSign) : # 개회, 파산은 무조건 개회, 파산
             if (k == "개인회생" or k=="파산") : 
                 docu = k
@@ -686,7 +702,7 @@ if __name__ == "__main__" :
                         out.append(temp)
                     continue
             
-                f_name_items = {"key" :"", "name" :"", "docu" :"", "event" :"", "extra" :"", "date" :"", "pw" : ""}
+                f_name_items = {"key" :"", "name" :"", "docu" :"", "event" :"", "sub_event" : "", "extra" :"", "date" :"", "pw" : ""}
                 depth1, depth2, depth3, allName  = "", "", "", ""
                 extra = os.path.splitext(f)[0] # extr = stem 여기서 하나씩 항목 제외시키므로 최종적으로 남는 건 말 그대로 extra
                 ext = os.path.splitext(f)[1]
@@ -720,15 +736,19 @@ if __name__ == "__main__" :
 
                 f_name_items["name"], extra = nameFnc(extra, debtorName, grtName) #### name 할당 ####################
 
-                f_name_items["date"], extra = dateFnc(extra) ### date 할당
-
                 isEvent, docuEventExtra = eventFnc(extra) ### docu, event
-                
+
                 if isEvent == 1 : # 정상
                     f_name_items["docu"] = docuEventExtra[0] #사건번호>>docu 할당 #############
                     f_name_items["event"] = docuEventExtra[1]
                     extra = docuEventExtra[2]
-                
+
+                    # 사건번호 하나 더 있는지 확인
+                    sub_isEvent, sub_docuEventExtra = eventFnc(extra)
+                    if sub_isEvent == 1 :
+                        f_name_items["sub_event"] = sub_docuEventExtra[1]
+                        extra = sub_docuEventExtra[2]
+            
                 else : # 사건번호 없음
                     extra = docuEventExtra[2]
                     
@@ -748,12 +768,14 @@ if __name__ == "__main__" :
                             temp.append("nodocu")
                             nobasic.append(temp)
                             continue
+                
+                f_name_items["date"], extra = dateFnc(extra) ### date 할당
 
                 extra = rmNeedless(extra)
                 extra = rm_s(extra)
                 f_name_items["extra"] = extra #### extra #################
 
-                new_f = "_".join(filter(lambda x :bool(x), f_name_items.values())) + ext
+                new_f = "_".join(filter(lambda x :bool(x), f_name_items.values())) + ext # 최종 파일 이름 #######################
 
             else :  # purpose == done
                 new_f = f 
