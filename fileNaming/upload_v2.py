@@ -151,7 +151,7 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
         "기타1" : re.compile(r"집행문\s?부여|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|대위변제|분할|분납|상환|감면|(상속)?\s?한정\s?승인|\
             |상속\s?포기|지방세|세목별|과세|.*내용증명|출입국사실|.*답변서|.*진술서|.*보정(서|명령)|.*인포케어|보증면탈|자동차직권말소|완제|.*품의서|금전\s?공탁|\
             |배분\s?[계산|기일|내역]|[가-힣\s]*(예고|답변|준비)|이의신청|의사표시(?!용)|소송고지|위임장|개별공시|주택가격|채무종결|개인\s?정보\s?(활용|이용|동의)|\
-            |소장|진단서|사용\s?증명원|해제\s?통지서"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
+            |소장|진단서|사용\s?증명원|해제\s?통지서|의견\s?청취서"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
         #기타 제거 : 부채증명서, 신용조회, 주민등록정보
         "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)|(?<=환매)통지서?|(?<=신탁)통지서?"), # 세양통신 해결
         "양도통지서1" : re.compile(r"종[적족]\s?(조회)?|(?<!주소|소\s)이력"), #종적조회는 모두 양통만 있더라
@@ -755,7 +755,17 @@ if __name__ == "__main__" :
                     if isEvent == 2 :
                         f_name_items["event"] = docuEventExtra[1]
 
-                    isDocu, docuExtra = setDocu(extra)  #비사건번호>>docu 할당 #############
+                        # 사건번호 하나 더 있는지 확인
+                        sub_isEvent, sub_docuEventExtra = eventFnc(extra)
+                        if sub_isEvent == 1 :
+                            f_name_items["docu"] = sub_docuEventExtra[0] #사건번호>>docu 할당 #############
+                            f_name_items["sub_event"] = sub_docuEventExtra[1]
+                            extra = sub_docuEventExtra[2]
+                        else :
+                            isDocu, docuExtra = setDocu(extra)  #비사건번호>>docu 할당 #############
+                    else :
+                        isDocu, docuExtra = setDocu(extra)  #비사건번호>>docu 할당 #############
+                        
                     if isDocu :
                         f_name_items["docu"] = docuExtra[0]
                         extra = docuExtra[1]
