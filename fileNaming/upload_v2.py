@@ -753,35 +753,40 @@ if __name__ == "__main__" :
                         f_name_items["sub_event"] = sub_docuEventExtra[1]
                         extra = sub_docuEventExtra[2]
             
-                else : # 사건번호 없음
+                else : # 사건번호 없거나(0) docu 정의할 수 없는 경정사건(2)
                     extra = docuEventExtra[2]
+                    CallSetDocu = False # setdocu 부른 경우, is애쳐
                     
-                    if isEvent == 2 :
+                    if isEvent == 2 : #경정사건
                         f_name_items["event"] = docuEventExtra[1]
 
                         # 사건번호 하나 더 있는지 확인
                         sub_isEvent, sub_docuEventExtra = eventFnc(extra)
-                        if sub_isEvent == 1 :
+                        if sub_isEvent == 1 : # subEvent로 docu 정의 
                             f_name_items["docu"] = sub_docuEventExtra[0] #사건번호>>docu 할당 #############
                             f_name_items["sub_event"] = sub_docuEventExtra[1]
                             extra = sub_docuEventExtra[2]
-                        else :
+                        else : # subEvent로도 docu 정의 불가할 때 setDocu 호출
                             isDocu, docuExtra = setDocu(extra)  #비사건번호>>docu 할당 #############
-                    else :
+                            CallSetDocu = True
+                    else : # 사건번호 없을 때 setDocu 호출
                         isDocu, docuExtra = setDocu(extra)  #비사건번호>>docu 할당 #############
-                        
-                    if isDocu :
-                        f_name_items["docu"] = docuExtra[0]
-                        extra = docuExtra[1]
-                    else : # nodocu
-                        if purpose == 'logTest' :
-                            nobasic.append([f, "nodocu"])
-                            continue
-                        else :
-                            temp = re_name(join(path, f), join(path_nobasic, f))#---------t
-                            temp.append("nodocu")
-                            nobasic.append(temp)
-                            continue
+                        CallSetDocu = True
+
+                    # setDocu 호출했을 때만 실행하는 영역
+                    if CallSetDocu : 
+                        if isDocu :
+                            f_name_items["docu"] = docuExtra[0]
+                            extra = docuExtra[1]
+                        else : # nodocu
+                            if purpose == 'logTest' :
+                                nobasic.append([f, "nodocu"])
+                                continue
+                            else :
+                                temp = re_name(join(path, f), join(path_nobasic, f))#---------t
+                                temp.append("nodocu")
+                                nobasic.append(temp)
+                                continue
                 
                 f_name_items["date"], extra = dateFnc(extra) ### date 할당
 
