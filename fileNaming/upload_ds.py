@@ -30,24 +30,24 @@ import pickle
 
 def getPath(purpose:str) :
     """
-    'nas' : 새 스캔파일(업로드), nas내부 주소 \n
+    'nas' : 대성 스캔파일\대성\업로드, nas내부 주소 \n
     'done' : 검수완료, 네트워크 경로 \n
     'fileTest' : pc바탕화면/test, 로그는 파일서버개편 폴더 \n
-    'logTest' : 모든 로그 읽어서 원래파일명을 재작업, 스캔파일log/success, 로그는 파일서버개편
+    'logTest' : 모든 로그 읽어서 원래파일명을 재작업, 대성 스캔파일log/success, 로그는 파일서버개편
     """
-    path = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)' 
-    path_server = r'\\192.168.0.75\솔림헬프'
+    path = r'\\192.168.0.75\스캔파일\대성 스캔파일 업로드' 
+    path_server = r'\\192.168.0.75\대성'
     path_nobasic = join(path, "파일명에러")
-    path_out = r'\\192.168.0.75\삭제예정파일\관리제외'
-    path_noUp = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\업로드대상아님'
-    path_log_success = r'\\192.168.0.75\스캔파일\스캔파일log\success'
-    path_log_nobasic = r'\\192.168.0.75\스캔파일\스캔파일log\nobasic'
-    path_log_out = r'\\192.168.0.75\스캔파일\스캔파일log\out'
-    path_log_fail = r'\\192.168.0.75\스캔파일\스캔파일log\fail'
-    path_df = r'\\192.168.0.75\스캔파일\스캔파일log\_project\파일\채무자조회.pkl'
-    path_dupl = r'\\192.168.0.75\삭제예정파일\중복_서버'
+    path_out = r'\\192.168.0.75\삭제예정파일\대성\관리제외'
+    path_noUp = r'\\192.168.0.75\스캔파일\대성 스캔파일 업로드\업로드대상아님'
+    path_log_success = r'\\192.168.0.75\스캔파일\스캔파일log\대성 스캔파일log\success'
+    path_log_nobasic = r'\\192.168.0.75\스캔파일\스캔파일log\대성 스캔파일log\nobasic'
+    path_log_out = r'\\192.168.0.75\스캔파일\스캔파일log\대성 스캔파일log\out'
+    path_log_fail = r'\\192.168.0.75\스캔파일\스캔파일log\대성 스캔파일log\fail'
+    path_df = r'\\192.168.0.75\스캔파일\스캔파일log\_project\대성파일\채무자조회.pkl'
+    path_dupl = r'\\192.168.0.75\삭제예정파일\대성\중복_서버'
     if purpose == "done" :
-        path = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\검수완료' 
+        path = r'\\192.168.0.75\스캔파일\대성 스캔파일 업로드\검수완료' 
         path_nobasic = join(path, "파일명에러")
     elif purpose == "fileTest" :
         path = r'C:\Users\SL\Desktop\test' 
@@ -60,23 +60,24 @@ def getPath(purpose:str) :
         path_log_fail = r'D:\0.전산\1.진행중과업\파일서버개편\log\fail'
         ### dict_referFnc 안 읽어지면 절대경로 담은 변수 직접 넣으라고
     elif purpose == "logTest" : # 파일 이동이 일어나지 않는다.
-        path = r'\\192.168.0.75\스캔파일\스캔파일log\nobasic\새 폴더' ######################### 읽을 csv들 있는 경로
-        path_server = r'/volume1/솔림헬프'
+        path = r'\\192.168.0.75\스캔파일\스캔파일log\대성 스캔파일log\nobasic\새 폴더' ######################### 읽을 csv들 있는 경로
+        path_server = r'/volume1/대성'
         path_log_success = r'D:\0.전산\1.진행중과업\파일서버개편\log\success'
     elif purpose == "nas" : pass
     
-    # path = r'/volume1/스캔파일/새 스캔파일(업로드)' #############
-    # path_server = r'/volume1/솔림헬프/'
+    # path = r'/volume1/스캔파일/대성 스캔파일 업로드' #############
+    # path_server = r'/volume1/대성/'
     # path_nobasic = join(path, "파일명에러")
-    # path_out = r'/volume1/삭제예정파일/관리제외'
-    # path_log_success = r'/volume1/스캔파일/스캔파일log/success'
-    # path_log_nobasic = r'/volume1/스캔파일/스캔파일log/nobasic'
-    # path_log_out = r'/volume1/스캔파일/스캔파일log/out'
-    # path_log_fail = r'/volume1/스캔파일/스캔파일log/fail'
-    # path_df = r'/volume1/스캔파일/스캔파일log/_project/파일/채무자조회.pkl'
-    # path_dupl = r'/volume1/삭제예정파일/중복_서버'
+    # path_out = r'/volume1/삭제예정파일/대성/관리제외'
+    # path_noUp = r'/volume1/스캔파일/대성 스캔파일 업로드/업로드대상아님'
+    # path_log_success = r'/volume1/스캔파일/스캔파일log/대성 스캔파일log/success'
+    # path_log_nobasic = r'/volume1/스캔파일/스캔파일log/대성 스캔파일log/nobasic'
+    # path_log_out = r'/volume1/스캔파일/스캔파일log/대성 스캔파일log/out'
+    # path_log_fail = r'/volume1/스캔파일/스캔파일log/대성 스캔파일log/fail'
+    # path_df = r'/volume1/스캔파일/스캔파일log/_project/대성파일/채무자조회.pkl'
+    # path_dupl = r'/volume1/삭제예정파일/대성/중복_서버'
     # if purpose == "done" :
-    #     path = r'/volume1/스캔파일/새 스캔파일(업로드)/검수완료' 
+    #     path = r'/volume1/스캔파일/대성 스캔파일 업로드/검수완료' 
     #     path_nobasic = join(path, "파일명에러")
     # elif purpose == "fileTest" :
     #     path = r'C:\Users\SL\Desktop\test' 
@@ -89,8 +90,8 @@ def getPath(purpose:str) :
     #     path_log_fail = r'D:\0.전산\1.진행중과업\파일서버개편\log\fail'
     #     ### dict_referFnc 안 읽어지면 절대경로 담은 변수 직접 넣으라고
     # elif purpose == "logTest" : # 파일 이동이 일어나지 않는다.
-    #     path = r'/volume1/스캔파일/스캔파일log/success'
-    #     path_server = r'/volume1/솔림헬프'
+    #     path = r'/volume1/스캔파일/스캔파일log/대성 스캔파일log/success'
+    #     path_server = r'/volume1/대성'
     #     path_log_success = r'D:\0.전산\1.진행중과업\파일서버개편\log\success'
     # elif purpose == "nas" : pass
     
@@ -100,10 +101,10 @@ y_10 = str(datetime.today().year)[2] #23년이면 2
 y_10_before = str(int(y_10)-1) #23년이면 2-1 = 1
 y_1 = str(datetime.today().year)[3] # 23년이면 3
 
-path_dict = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일' 
+path_dict = r'\\192.168.0.75/스캔파일/스캔파일log/_project/대성파일' 
 # dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]
 with open(join(path_dict, "dict_refer.pkl"), 'rb') as pkl : dict_refer = pickle.load(pkl)
-# outList (활용) "key" in sr.values > out
+# outList (활용) "key" in sr.values > out # 쓰지 않는다.
 # 안 쓸거면 빈 outList를 만들면 됨
 with open(join(path_dict, "outList.pkl"), 'rb') as pkl : outList = pickle.load(pkl)
 
@@ -112,11 +113,11 @@ def crc32_checksum(filename):
     buf = (binascii.crc32(buf) & 0xFFFFFFFF)
     return "%08X" % buf
 
-path_kcs = r'\\192.168.0.75/스캔파일/스캔파일log/_project/파일/중복조사/kcs별 파일정보_솔림헬프.pkl'
-def read_cks(path_kcs) :
+path_kcs = r'\\192.168.0.75/스캔파일\스캔파일log/_project/대성파일/중복조사/kcs별 파일정보_대성.pkl'
+def read_kcs(path_kcs) :
     with open(path_kcs, "rb") as pkl :
         return pickle.load(pkl)
-dict_kcs = read_cks(path_kcs)
+dict_kcs = read_kcs(path_kcs)
 
 def isDuplFnc(root:str, f:str) :
     isDupl = False
@@ -153,7 +154,7 @@ comp = { # search는 앞에서부터 찾으니까 엄격한 것이 앞으로. �
         "기타1" : re.compile(r"집행문\s?부여|배송[가-힣]+|(채권|양도|양수|매매).*계약|화해(?!권고)|대위변제|분할|분납|상환|감면|(상속)?\s?한정\s?승인|\
             |상속\s?포기|지방세|세목별|과세|.*내용증명|출입국사실|.*답변서|.*진술서|.*보정(서|명령)|.*인포케어|보증면탈|자동차직권말소|완제|.*품의서|금전\s?공탁|\
             |배분\s?[계산|기일|내역]|[가-힣\s]*(예고|답변|준비)|이의신청|의사표시(?!용)|소송고지|위임장|개별공시|주택가격|(채무)?\s?(종결|면제)\s?확인서?|개인\s?정보\s?(활용|이용|동의)|\
-            |소장|진단서|사용\s?증명원|해제\s?통지서|의견\s?청취서|느단|추심\s?요청서?|안내문?"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
+            |소장|진단서|사용\s?증명원|해제\s?통지서|의견\s?청취서|느단|추심\s?요청서?|안내문?|개문|채무\s?이행\s?통지"), # 제거가 아니므로 첫 글자만 잘 찾으면 된다.
         #기타 제거 : 부채증명서, 신용조회, 주민등록정보
         "양도통지서" : re.compile(r"(채권)?\s?(양도|양수)\s?통지서?|(채권)?\s?양도\s?및?\s?양수\s?(통지)?서?\s?|(?<![^가-힣][가-힣])양통|(?<=\d차)\s?(양통|양도통지서?)|(?<=환매)통지서?|(?<=신탁)통지서?"), # 세양통신 해결
         "양도통지서1" : re.compile(r"종[적족]\s?(조회)?|(?<!주소|소\s)이력"), #종적조회는 모두 양통만 있더라
@@ -661,10 +662,11 @@ def write_log_csv(log:list, path : str, addInfo : str = "") -> None: ###########
             if globals()[name] is log :
                 print(f'log 파일이 비어있습니다. path : {path}')
 
-def no_upload(f) :
-    p = re.compile(r"개문|채무\s?이행\s?통지")
-    if p.search(f) : return True
-    else : return False
+# 미사용
+# def no_upload(f) :
+#     p = re.compile(r"개문|채무\s?이행\s?통지")
+#     if p.search(f) : return True
+#     else : return False
 
 
 if __name__ == "__main__" :
@@ -697,16 +699,16 @@ if __name__ == "__main__" :
         try : #기본적으로 dict_refer에서의 에러는 처리된 상태이다. 
             if purpose != "done" : 
                 
-                if no_upload(f) : # 업로드 대상 아님################
-                    if purpose == 'logTest' :
-                        out.append([f, "업로드대상아님"])
-                    else :
-                        if not os.path.exists(path_noUp):
-                            os.makedirs(path_noUp)
-                        temp = re_name(join(path, f), join(path_noUp, f))#----------t
-                        temp.append("업로드대상아님")
-                        out.append(temp)
-                    continue
+                # if no_upload(f) : # 업로드 대상 아님################
+                #     if purpose == 'logTest' :
+                #         out.append([f, "업로드대상아님"])
+                #     else :
+                #         if not os.path.exists(path_noUp):
+                #             os.makedirs(path_noUp)
+                #         temp = re_name(join(path, f), join(path_noUp, f))#----------t
+                #         temp.append("업로드대상아님")
+                #         out.append(temp)
+                #     continue
             
                 f_name_items = {"key" :"", "name" :"", "docu" :"", "event" :"", "sub_event" : "", "extra" :"", "date" :"", "pw" : ""}
                 depth1, depth2, depth3, allName  = "", "", "", ""
