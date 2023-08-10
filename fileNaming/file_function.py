@@ -16,6 +16,28 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
+
+#########################################
+# 파일 읽고 pkl 로 저장
+#########################################
+
+def save_dataset_to_pkl (dir, file_name, sheet_name=0) :
+    """폴더경로, 파일명(확장자x), [쉬트네임 또는 순번]을 주면
+    조건에 맞는 칼럼은 문자열로 읽고,
+    빈칸은 빈문자열로 읽어 pkl로 저장해주는 함수
+    """
+    # 확장자
+    read_ext = ".xlsx"
+    write_ext = ".pkl"
+    # 문자열로 읽을 컬럼명 패턴
+    pattern = re.compile('(키|코드|계좌)$')
+    # 
+    path_file = join(wd, file_name)
+    df = pd.read_excel(path_file + read_ext, sheet_name=sheet_name, dtype={col: str for col in pd.read_excel(path_file + read_ext, sheet_name=sheet_name).columns if pattern.search(col)}).fillna("")
+    df.to_pickle(path_file + write_ext)
+
+
+
 #########################################
 # 파일 목록 불러오기
 #########################################
