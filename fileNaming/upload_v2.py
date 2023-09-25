@@ -211,9 +211,13 @@ def rmNeedless(extra:str) :
     """name과 extra가 확정되면 그때 한 번 해준다. 공백으로 대체가 있으므로 rm_s()를 내포했다.
     일련번호와 기호 제거"""
        
-    #완전제거                                                      영어와 숫자가 연속
+    #1) 완전제거                                                      영어와 숫자가 연속
+    # p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
+    #     |SCSB|ADMIN.*Conflict|(?<!외)\d(?!건|통|차|채|자|억|천|백|급|번|회|길|명|8염|염)|복사본") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
+    
+    #2) 이제 숫자는 남김도록 수정한거
     p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
-        |SCSB|ADMIN.*Conflict|(?<!외)\d(?!건|통|차|채|자|억|천|백|급|번|회|길|명|8염|염)|복사본") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
+         |SCSB|ADMIN.*Conflict|복사본") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
     p_sign = re.compile(r"[^㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^\w]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
     
     extra = p_rmSerialN.sub("", extra)
