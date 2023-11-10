@@ -1,3 +1,7 @@
+# 엑셀 읽을 때 기본스타일 경고 없애기
+import warnings
+warnings.simplefilter("ignore")
+
 -----dtype-------------------------------------------------------------------
 
 debt_dtype = {'채무자키':str, '타채무자키':str, '담당자키':str}

@@ -105,7 +105,8 @@ path_dict = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일'
 with open(join(path_dict, "dict_refer.pkl"), 'rb') as pkl : dict_refer = pickle.load(pkl)
 # outList (활용) "key" in sr.values > out
 # 안 쓸거면 빈 outList를 만들면 됨
-with open(join(path_dict, "outList.pkl"), 'rb') as pkl : outList = pickle.load(pkl)
+outList = pd.read_pickle(join(path_dict, "outList.pkl")) # 아래 코드 파이썬11로 업그레이드 후 오류 나서, 이렇게 바꿈. 어차피 nas에서는 빈 outList를 사용하므로 여기와는 다름
+# with open(join(path_dict, "outList.pkl"), 'rb') as pkl : outList = pickle.load(pkl)
 
 def crc32_checksum(filename):
     buf = open(filename,'rb').read()
@@ -812,10 +813,11 @@ if __name__ == "__main__" :
                 if purpose == 'logTest' :
                     nobasic.append([f, depth1])
                 else :
-                    temp = re_name(join(path, f), join(path_nobasic, new_f))#----------t
+                    temp = re_name(join(path, f), join(path_nobasic, new_f)) #----------t
                     temp.append(depth1)
                     nobasic.append(temp)
-                
+                    
+                    
 
             elif depth1 == "out" :
                 out_dir = join(path_out, depth2, depth3)
