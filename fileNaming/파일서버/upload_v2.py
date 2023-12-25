@@ -50,7 +50,7 @@ def getPath(purpose:str) :
         path = r'\\192.168.0.75\스캔파일\새 스캔파일(업로드)\검수완료' 
         path_nobasic = join(path, "파일명에러")
     elif purpose == "fileTest" :
-        path = r'C:\Users\SL\Desktop\test' 
+        path = r'C:\Users\DATA\Desktop\test' 
         path_server = join(path, 'server')
         path_nobasic = join(path, "hand")
         path_out = join(path, '관리제외')
@@ -79,7 +79,7 @@ def getPath(purpose:str) :
     #     path = r'/volume1/스캔파일/새 스캔파일(업로드)/검수완료' 
     #     path_nobasic = join(path, "파일명에러")
     # elif purpose == "fileTest" :
-    #     path = r'C:\Users\SL\Desktop\test' 
+    #     path = r'C:\Users\DATA\Desktop\test' 
     #     path_server = join(path, 'server')
     #     path_nobasic = join(path, "hand")
     #     path_out = join(path, '관리제외')
@@ -100,7 +100,7 @@ y_10 = str(datetime.today().year)[2] #23년이면 2
 y_10_before = str(int(y_10)-1) #23년이면 2-1 = 1
 y_1 = str(datetime.today().year)[3] # 23년이면 3
 
-path_dict = r'C:\Users\SL\Desktop\workspace\python\fileNaming\파일' 
+path_dict = r'C:\Users\DATA\Desktop\workspace\python\fileNaming\파일' 
 # dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]
 with open(join(path_dict, "dict_refer.pkl"), 'rb') as pkl : dict_refer = pickle.load(pkl)
 # outList (활용) "key" in sr.values > out
