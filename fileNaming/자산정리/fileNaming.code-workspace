@@ -1,0 +1,33 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "\\\\192.168.0.75\\스캔파일\\스캔파일log\\_project"
+		}
+	],
+	"settings": {
+		"terminal.integrated.profiles.windows": {
+			"Command Prompt": {
+				"source": "PowerShell",
+				"icon": "terminal-powershell",
+				"overrideName": true,
+				"path": [
+					"${env:windir}\\Sysnative\\cmd.exe",
+					"${env:windir}\\System32\\cmd.exe"
+				],
+				"args": [
+					"/K",
+					"call activate py_39"
+				],
+				"env": {
+					"CMDER_ROOT": "${env:CMDER_ROOT}"
+				},
+				"hidden": false
+			}
+		},
+		"terminal.integrated.defaultProfile.windows": "Command Prompt"
+		
+	}
+}
