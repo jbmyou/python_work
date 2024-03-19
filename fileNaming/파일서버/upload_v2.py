@@ -103,6 +103,7 @@ y_1 = str(datetime.today().year)[3] # 23년이면 3
 path_dict = r'C:\Users\DATA\Desktop\workspace\python\fileNaming\파일' 
 # dict_refer["key"][0:매각사, 1:채무상태, 2:채무자성명, 3:보증인성명]
 with open(join(path_dict, "dict_refer.pkl"), 'rb') as pkl : dict_refer = pickle.load(pkl)
+
 # outList (활용) "key" in sr.values > out
 # 안 쓸거면 빈 outList를 만들면 됨
 outList = pd.read_pickle(join(path_dict, "outList.pkl")) # 아래 코드 파이썬11로 업그레이드 후 오류 나서, 이렇게 바꿈. 어차피 nas에서는 빈 outList를 사용하므로 여기와는 다름
