@@ -222,6 +222,10 @@ def rmNeedless(extra:str) :
     p_rmSerialN = re.compile(r"(?<![a-zA-Z])[a-zA-Z](?![a-zA-Z])|\d+[a-zA-Z]+|[a-zA-Z]+\d+|TAA\(회\)|\
          |SCSB|ADMIN.*Conflict|복사본") # 모든 숫자를 지운다. 해당글자가 나온다면 그 앞 숫자는 살린다. 
     p_sign = re.compile(r"[^㈜()\sa-zA-Zㄱ-ㅎ가-힣\d]|\([^\w]*\)") #반쪽 괄호만 있는 거는 어케 지우지?
+
+    # ...(3)... 이런건 지우자
+    p_numbering = re.compile(r"\(\s?\d{1,2}\s?\)")
+    extra = p_numbering.sub(" ", extra)
     
     extra = p_rmSerialN.sub("", extra)
     extra = p_sign.sub(" ", extra)
