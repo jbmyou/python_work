@@ -157,3 +157,14 @@ dict_refer = dict_refer()
 
 ------------------------------------------------------
 new_name = "_".join(filter(lambda x :bool(x), dict.values()))
+
+
+-----------------------------------------------------------------
+
+def 파일명(폴더:str, 키워드:str) :
+    file_list = os.listdir(폴더)
+    account_filename = [file for file in file_list if re.search(키워드, file)]
+    if len(account_filename) == 1 :
+        return join(폴더,account_filename[0])
+    else :
+        print("해당 키워드가 들어간 파일이 하나가 아닙니다.")
