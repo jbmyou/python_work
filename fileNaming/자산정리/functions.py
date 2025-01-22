@@ -94,7 +94,7 @@ def 날짜차이(입금일:str, 기준일:str) :
     return (date2 - date1).days # .days : 정수값 얻기위해
 
 
-def 키워드로파일명찾기(폴더:str, 포함키워드:str, 제외키워드="", 전체경로=True) :
+def 키워드로파일명찾기(폴더:str, 포함키워드:str, 제외키워드="", 전체경로=True, 여러파일허용=False) :
     file_list = [file for file in os.listdir(폴더) if not file.startswith('~$')]
     if 제외키워드 == "" : 
         fn = [file for file in file_list if re.search(포함키워드, file)]
@@ -109,5 +109,11 @@ def 키워드로파일명찾기(폴더:str, 포함키워드:str, 제외키워드
     elif len(fn) == 0 :
         print(f"포함키워드:{포함키워드}, 제외키워드{제외키워드} 조건을 만족하는 파일이 없습니다.")
     else : 
-        print(f"포함키워드:{포함키워드}, 제외키워드{제외키워드} 조건을 만족하는 파일이 둘 이상입니다.")
-        print(fn)
+        if 여러파일허용 : 
+            if 전체경로 : 
+                return [join(폴더,f) for f in fn]
+            else : 
+                return fn
+        else : 
+            print(f"포함키워드:{포함키워드}, 제외키워드{제외키워드} 조건을 만족하는 파일이 둘 이상입니다.")
+            print(fn)
